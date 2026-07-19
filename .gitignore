@@ -16,5 +16,7 @@ env/
 .idea/
 .env
 .env.local
+.env.sit
+.env.prod
 *.log
 .pgdata/

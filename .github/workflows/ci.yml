@@ -51,4 +51,5 @@ jobs:
       - run: uv sync --dev
       - run: uv run pytest -v
         env:
+          APP_ENV: test
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test

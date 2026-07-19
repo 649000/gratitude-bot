@@ -1,12 +1,20 @@
-from collections.abc import AsyncGenerator
+import os
 
-import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+os.environ.setdefault("APP_ENV", "test")
 
-from app.dependencies import get_session
-from app.main import app
-from app.models.base import Base
+from collections.abc import AsyncGenerator  # noqa: E402
+
+import pytest_asyncio  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy.ext.asyncio import (  # noqa: E402
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+
+from app.dependencies import get_session  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.base import Base  # noqa: E402
 
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test"
 

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -16,10 +17,13 @@ from app.logging_config import configure_logging
 from app.routers.v1 import auth, gratitudes, health
 from app.telegram.webhook import router as telegram_router
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     configure_logging()
+    logger.info("Starting %s — env=%s", settings.app_name, settings.env)
     yield
 
 

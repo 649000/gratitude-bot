@@ -1,10 +1,12 @@
+ENV ?= dev
+
 .PHONY: dev test lint format migrate check
 
 dev:
-	uvicorn app.main:app --reload --port 8000
+	APP_ENV=$(ENV) uvicorn app.main:app --reload --port 8000
 
 test:
-	pytest -v --cov=app
+	APP_ENV=test pytest -v --cov=app
 
 lint:
 	ruff check .
@@ -13,9 +15,9 @@ format:
 	ruff format .
 
 migrate:
-	alembic upgrade head
+	APP_ENV=$(ENV) alembic upgrade head
 
 makemigrations:
-	alembic revision --autogenerate -m "$(message)"
+	APP_ENV=$(ENV) alembic revision --autogenerate -m "$(message)"
 
 check: lint format --check test
