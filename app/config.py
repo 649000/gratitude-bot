@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Gratitude Bot"
 
-    database_url: str
+    database_url: str = ""
     database_echo: bool = False
     db_schema: str = "gratitude_bot"
     db_pool_size: int = Field(default=5, ge=1)

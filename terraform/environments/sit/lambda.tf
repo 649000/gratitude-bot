@@ -44,8 +44,20 @@ module "webhook_lambda" {
   policy_statements = {
     ssm_read = {
       effect    = "Allow"
-      actions   = ["ssm:GetParametersByPath"]
-      resources = ["arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_path}/*"]
+      actions   = [
+        "ssm:GetParametersByPath",
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ]
+      resources = [
+        "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_path}",
+        "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_path}/*"
+      ]
+    }
+    kms_decrypt = {
+      effect    = "Allow"
+      actions   = ["kms:Decrypt"]
+      resources = ["*"]
     }
   }
 
