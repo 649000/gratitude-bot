@@ -50,6 +50,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot"
     database_echo: bool = False
+    db_schema: str = "gratitude_bot"
     db_pool_size: int = Field(default=5, ge=1)
     db_max_overflow: int = Field(default=10, ge=0)
 
