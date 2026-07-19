@@ -1,13 +1,13 @@
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
 
-class GratitudeEntry(Base, TimestampMixin):  # noqa: F811
+class GratitudeEntry(Base, TimestampMixin):
     __tablename__ = "gratitude_entries"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -28,6 +28,11 @@ class GratitudeEntry(Base, TimestampMixin):  # noqa: F811
     source: Mapped[str] = mapped_column(
         String(16),
         default="telegram",
+    )
+    starred: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
     )
 
     user: Mapped["User"] = relationship(back_populates="gratitudes")  # noqa: F821
