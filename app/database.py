@@ -5,6 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.config import settings
 
 TIMEZONE = "Asia/Singapore"
+
+
+def _ensure_async_url(url: str) -> str:
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 _CONNECT_ARGS = {
     "server_settings": {
         "timezone": TIMEZONE,
@@ -12,9 +20,11 @@ _CONNECT_ARGS = {
     }
 }
 
+_DB_URL = _ensure_async_url(settings.database_url)
+
 if settings.env == "prod":
     engine = create_async_engine(
-        settings.database_url,
+        _DB_URL,
         echo=settings.database_echo,
         connect_args=_CONNECT_ARGS,
         pool_size=settings.db_pool_size,
@@ -23,7 +33,7 @@ if settings.env == "prod":
     )
 else:
     engine = create_async_engine(
-        settings.database_url,
+        _DB_URL,
         echo=settings.database_echo,
         connect_args=_CONNECT_ARGS,
     )

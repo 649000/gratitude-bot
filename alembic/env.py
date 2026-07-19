@@ -1,12 +1,17 @@
 import asyncio
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
-from app.config import settings
-from app.models.base import Base
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from app.config import settings  # noqa: E402
+from app.models.base import Base  # noqa: E402
 
 config = context.config
 if config.config_file_name is not None:
@@ -41,9 +46,15 @@ def do_run_migrations(connection):
         context.run_migrations()
 
 
+def _ensure_async_url(url: str) -> str:
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 async def run_async_migrations() -> None:
     connectable = create_async_engine(
-        settings.database_url,
+        _ensure_async_url(settings.database_url),
         poolclass=pool.NullPool,
         connect_args=_CONNECT_ARGS,
     )
