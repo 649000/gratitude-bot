@@ -24,7 +24,8 @@ _CONNECT_ARGS = {
     "server_settings": {
         "timezone": TIMEZONE,
         "search_path": settings.db_schema,
-    }
+    },
+    "statement_cache_size": 0,
 }
 
 

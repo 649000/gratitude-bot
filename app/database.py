@@ -17,7 +17,8 @@ _CONNECT_ARGS = {
     "server_settings": {
         "timezone": TIMEZONE,
         "search_path": settings.db_schema,
-    }
+    },
+    "statement_cache_size": 0,
 }
 
 _DB_URL = _ensure_async_url(settings.database_url)
