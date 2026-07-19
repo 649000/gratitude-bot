@@ -16,6 +16,7 @@ env/
 .idea/
 .env
 .env.local
+.env.dev
 .env.sit
 .env.prod
 *.log
