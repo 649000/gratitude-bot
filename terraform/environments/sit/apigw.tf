@@ -5,6 +5,7 @@ module "api_gateway" {
   name          = "${local.project_name}-webhook-${var.environment}"
   description   = "HTTP API Gateway for ${local.project_name} Telegram webhook"
   protocol_type = "HTTP"
+  create_domain_name = false
 
   cors_configuration = {
     allow_headers = ["Content-Type", "Authorization"]

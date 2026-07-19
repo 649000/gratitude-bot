@@ -1,14 +1,9 @@
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/../../../.build/lambda"
-  output_path = "${path.module}/../../../.build/webhook.zip"
-}
-
 module "webhook_lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.0"
 
   function_name = "${local.project_name}-webhook-${var.environment}"
+  description   = "Telegram webhook handler for ${local.project_name} (${var.environment})"
   handler       = "app.infrastructure.lambda_handler.handler"
   runtime       = "python3.13"
   architectures = ["arm64"]
@@ -16,8 +11,12 @@ module "webhook_lambda" {
   timeout       = var.lambda_timeout
   publish       = true
 
-  create_package         = false
-  local_existing_package = data.archive_file.lambda_zip.output_path
+  source_path = [
+    {
+      path             = "${path.module}/../../../app"
+      pip_requirements = "${path.module}/../../../requirements.txt"
+    }
+  ]
 
   cloudwatch_logs_retention_in_days = 30
 
