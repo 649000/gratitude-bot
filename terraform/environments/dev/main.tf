@@ -12,13 +12,13 @@ terraform {
     }
   }
 
-  cloud {
-    organization = "nas-personal-projects"
-    workspaces {
-      project = "gratitude-bot"
-      name = "gratitude-bot-dev"
-    }
-  }
+  # cloud {
+  #   organization = "nas-personal-projects"
+  #   workspaces {
+  #     project = "gratitude-bot"
+  #     name = "gratitude-bot-dev"
+  #   }
+  # }
 }
 
 provider "aws" {
