@@ -20,3 +20,10 @@ env/
 .env.prod
 *.log
 .pgdata/
+.build/
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfplan
