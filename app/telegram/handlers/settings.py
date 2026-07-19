@@ -39,7 +39,7 @@ async def settings_command(
             callback_data="s:rediscovery",
         )],
         [InlineKeyboardButton(
-            f"📍 Timezone: {pref.timezone or 'UTC'}",
+            f"📍 Timezone: {pref.timezone or 'UTC+8'}",
             callback_data="s:timezone",
         )],
     ]
@@ -112,7 +112,7 @@ async def settings_toggle_callback(
                 callback_data="s:rediscovery",
             )],
             [InlineKeyboardButton(
-                f"📍 Timezone: {pref.timezone or 'UTC'}",
+                f"📍 Timezone: {pref.timezone or 'UTC+8'}",
                 callback_data="s:timezone",
             )],
         ]

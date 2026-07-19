@@ -35,7 +35,7 @@ class User(Base, TimestampMixin):
     )
     timezone: Mapped[str] = mapped_column(
         String(64),
-        default="UTC",
+        default="UTC+8",
     )
 
     gratitudes: Mapped[list["GratitudeEntry"]] = relationship(  # noqa: F821

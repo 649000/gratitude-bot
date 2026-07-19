@@ -12,7 +12,7 @@ class UserRead(BaseModel):
     username: str | None = None
     first_name: str | None = None
     last_name: str | None = None
-    timezone: str = "UTC"
+    timezone: str = "UTC+8"
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -22,7 +22,7 @@ class UserCreate(BaseModel):
     username: str | None = None
     first_name: str | None = None
     last_name: str | None = None
-    timezone: str = "UTC"
+    timezone: str = "UTC+8"
 
 
 class UserUpdate(BaseModel):

@@ -131,7 +131,7 @@ async def location_callback(
         lng=message.location.longitude,
     )
 
-    offset_str = "UTC"
+    offset_str = "UTC+8"
     if tz_name:
         try:
             tz_obj = tz_module(tz_name)
