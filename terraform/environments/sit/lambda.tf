@@ -10,7 +10,6 @@ module "webhook_lambda" {
   memory_size   = var.lambda_memory_size
   timeout       = var.lambda_timeout
   publish       = true
-  store_on_s3   = true
 
   source_path = [
     {
