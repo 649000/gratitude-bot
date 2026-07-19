@@ -17,18 +17,6 @@ module "webhook_lambda" {
     {
       path             = "${path.module}/../../.."
       pip_requirements = "${path.module}/../../../requirements.txt"
-      patterns = [
-        "!\\.git/.*",
-        "!terraform/.*",
-        "!alembic/.*",
-        "!alembic\\.ini",
-        "!\\.githooks/.*",
-        "!\\.idea/.*",
-        "!\\.env.*",
-        "!\\.python-version",
-        "!pyproject\\.toml",
-        "!uv\\.lock",
-      ]
     }
   ]
 
