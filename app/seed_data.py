@@ -3,7 +3,7 @@ prompts: list[dict[str, str]] = [
     # ── daily ──────────────────────────────────────────
     {"text": "What made you smile today?", "category": "daily"},
     {"text": "What was the best part of your day?", "category": "daily"},
-    {"text": "What小事 made you feel grateful this morning?", "category": "daily"},
+    {"text": "What made you feel grateful this morning?", "category": "daily"},
     {"text": "What's something you're looking forward to tomorrow?", "category": "daily"},
     {"text": "Describe a moment today that felt like a gift.", "category": "daily"},
     {"text": "What went better than expected today?", "category": "daily"},

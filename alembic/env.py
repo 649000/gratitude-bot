@@ -14,6 +14,9 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+TIMEZONE = "Asia/Singapore"
+_CONNECT_ARGS = {"server_settings": {"timezone": TIMEZONE}}
+
 
 def run_migrations_offline() -> None:
     url = settings.database_url
@@ -37,6 +40,7 @@ async def run_async_migrations() -> None:
     connectable = create_async_engine(
         settings.database_url,
         poolclass=pool.NullPool,
+        connect_args=_CONNECT_ARGS,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
