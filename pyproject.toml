@@ -14,6 +14,8 @@ dependencies = [
     "python-telegram-bot>=21.10.0",
     "httpx>=0.28.0",
     "boto3>=1.35.0",
+    "timezonefinder>=6.2.0",
+    "pytz>=2024.2",
 ]
 
 [project.optional-dependencies]
@@ -48,4 +50,11 @@ disallow_untyped_defs = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
 

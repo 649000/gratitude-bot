@@ -9,12 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_env_file(env: str) -> list[str] | None:
-    if env == "test":
+    if env in ("test", "sit", "prod"):
         return None
     if env == "dev":
         return [".env.dev", ".env"]
-    if env == "sit":
-        return [".env.sit"]
     return None
 
 
@@ -30,7 +28,7 @@ def _try_ssm_overrides(s: "Settings") -> None:
                 setattr(s, key, value)
                 logger.info("Overrode %s from SSM Parameter Store", key)
     except Exception:
-        logger.warning("SSM override failed — continuing with env file values")
+        logger.warning("SSM override failed — continuing with env var values")
 
 
 class Settings(BaseSettings):
@@ -48,11 +46,11 @@ class Settings(BaseSettings):
 
     app_name: str = "Gratitude Bot"
 
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot"
+    database_url: str = ""
     database_echo: bool = False
     db_schema: str = "gratitude_bot"
     db_pool_size: int = Field(default=5, ge=1)
-    db_max_overflow: int = Field(default=10, ge=0)
+    db_max_overflow: int = Field(default=0, ge=0)
 
     telegram_bot_token: str = ""
     telegram_webhook_url: str = ""
@@ -63,7 +61,7 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
-    ssm_enabled: bool = False
+    ssm_enabled: bool = True
     ssm_parameter_path: str = "/gratitude-bot"
 
 
@@ -71,7 +69,6 @@ env_name = os.environ.get("APP_ENV", "dev")
 
 _overrides: dict[str, object] = {}
 if env_name == "prod":
-    _overrides["ssm_enabled"] = True
     _overrides.setdefault("log_level", "WARNING")
     _overrides.setdefault("db_pool_size", 10)
     _overrides.setdefault("db_max_overflow", 20)
