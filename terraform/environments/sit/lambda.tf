@@ -11,6 +11,7 @@ module "webhook_lambda" {
   timeout       = var.lambda_timeout
   publish       = true
   store_on_s3   = true
+  s3_bucket     = aws_s3_bucket.lambda_packages.bucket
 
   source_path = [
     {
