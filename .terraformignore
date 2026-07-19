@@ -1,0 +1,53 @@
+# Local development
+.venv/
+venv/
+env/
+.env
+.env.*
+*.pyc
+__pycache__/
+*.egg-info/
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg
+.build/
+*.zip
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Terraform state (local)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Project-specific
+alembic/versions/__pycache__/
+tests/
+openspec/
+docker-compose.yml
+Dockerfile
+Makefile
+
+# Git
+.git/
+.gitignore
+.githooks/
+
+# Documentation
+README*
+*.md
+
