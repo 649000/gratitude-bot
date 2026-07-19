@@ -5,6 +5,7 @@ Revises: 0001
 Create Date: 2026-07-19
 """
 
+import uuid
 from collections.abc import Sequence
 
 from alembic import op
@@ -25,10 +26,10 @@ def upgrade() -> None:
     for prompt in prompts:
         conn.execute(
             text(
-                f"INSERT INTO {_SCHEMA}.prompts (text, category) "
-                "VALUES (:text, :category)"
+                f"INSERT INTO {_SCHEMA}.prompts (id, text, category) "
+                "VALUES (:id, :text, :category)"
             ),
-            {"text": prompt["text"], "category": prompt["category"]},
+            {"id": uuid.uuid4(), "text": prompt["text"], "category": prompt["category"]},
         )
 
 

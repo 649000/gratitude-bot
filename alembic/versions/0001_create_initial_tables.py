@@ -24,7 +24,7 @@ def upgrade() -> None:
 
     op.create_table(
         "prompts",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("text", sa.Text(), nullable=False),
         sa.Column("category", sa.String(64), nullable=False),
         schema=_SCHEMA,
@@ -32,7 +32,7 @@ def upgrade() -> None:
 
     op.create_table(
         "users",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("telegram_id", sa.BigInteger(), unique=True, nullable=False, index=True),
         sa.Column("username", sa.String(128), nullable=True),
         sa.Column("first_name", sa.String(128), nullable=True),
@@ -45,7 +45,7 @@ def upgrade() -> None:
 
     op.create_table(
         "gratitude_entries",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False, index=True),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("source", sa.String(16), nullable=False, server_default="telegram"),
@@ -66,7 +66,7 @@ def upgrade() -> None:
 
     op.create_table(
         "user_preferences",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), unique=True, nullable=False),
         sa.Column("digest_weekly_enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("digest_monthly_enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
