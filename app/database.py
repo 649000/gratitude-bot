@@ -4,8 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.config import settings
 
+SCHEMA = "gratitude_bot"
 TIMEZONE = "Asia/Singapore"
-_CONNECT_ARGS = {"server_settings": {"timezone": TIMEZONE}}
+_CONNECT_ARGS = {
+    "server_settings": {
+        "timezone": TIMEZONE,
+        "search_path": SCHEMA,
+    }
+}
 
 if settings.env == "prod":
     engine = create_async_engine(

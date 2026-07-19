@@ -16,13 +16,18 @@ down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
+_SCHEMA = "gratitude_bot"
+
 
 def upgrade() -> None:
+    op.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {_SCHEMA}"))
+
     op.create_table(
         "prompts",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("text", sa.Text(), nullable=False),
         sa.Column("category", sa.String(64), nullable=False),
+        schema=_SCHEMA,
     )
 
     op.create_table(
@@ -35,6 +40,7 @@ def upgrade() -> None:
         sa.Column("timezone", sa.String(64), nullable=False, server_default="UTC"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        schema=_SCHEMA,
     )
 
     op.create_table(
@@ -46,6 +52,7 @@ def upgrade() -> None:
         sa.Column("starred", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        schema=_SCHEMA,
     )
 
     op.create_foreign_key(
@@ -53,6 +60,8 @@ def upgrade() -> None:
         "gratitude_entries", "users",
         ["user_id"], ["id"],
         ondelete="CASCADE",
+        source_schema=_SCHEMA,
+        referent_schema=_SCHEMA,
     )
 
     op.create_table(
@@ -66,6 +75,7 @@ def upgrade() -> None:
         sa.Column("reminder_enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("last_rediscovery_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("onboarding_completed", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        schema=_SCHEMA,
     )
 
     op.create_foreign_key(
@@ -73,11 +83,14 @@ def upgrade() -> None:
         "user_preferences", "users",
         ["user_id"], ["id"],
         ondelete="CASCADE",
+        source_schema=_SCHEMA,
+        referent_schema=_SCHEMA,
     )
 
 
 def downgrade() -> None:
-    op.drop_table("user_preferences")
-    op.drop_table("gratitude_entries")
-    op.drop_table("users")
-    op.drop_table("prompts")
+    op.drop_table("user_preferences", schema=_SCHEMA)
+    op.drop_table("gratitude_entries", schema=_SCHEMA)
+    op.drop_table("users", schema=_SCHEMA)
+    op.drop_table("prompts", schema=_SCHEMA)
+    op.execute(sa.text(f"DROP SCHEMA IF EXISTS {_SCHEMA}"))
