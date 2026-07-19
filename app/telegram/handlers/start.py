@@ -122,35 +122,7 @@ async def location_callback(
     if not message.location:
         return
 
-    try:
-        from timezonefinder import TimezoneFinder
-
-        tf = TimezoneFinder()
-        tz_name = tf.timezone_at(
-            lat=message.location.latitude,
-            lng=message.location.longitude,
-        )
-    except Exception:
-        tz_name = "UTC"
-
     offset_str = "UTC"
-    if tz_name:
-        from pytz import timezone as tz_module
-
-        try:
-            import datetime
-
-            tz_obj = tz_module(tz_name)
-            offset = datetime.datetime.now(tz_obj).utcoffset().total_seconds() / 3600
-            hours = int(offset)
-            minutes = int((abs(offset) - abs(hours)) * 60)
-            sign = "+" if offset >= 0 else "-"
-            if minutes:
-                offset_str = f"UTC{sign}{abs(hours):.0f}:{minutes:02d}"
-            else:
-                offset_str = f"UTC{sign}{abs(hours):.0f}"
-        except Exception:
-            offset_str = "UTC"
 
     async with get_session() as session:
         db_user = await get_or_create_user(session, telegram_id=message.from_user.id)
