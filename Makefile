@@ -20,4 +20,7 @@ migrate:
 makemigrations:
 	APP_ENV=$(ENV) alembic revision --autogenerate -m "$(message)"
 
+seed:
+	APP_ENV=$(ENV) uv run python scripts/seed.py
+
 check: lint format --check test

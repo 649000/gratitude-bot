@@ -1,0 +1,133 @@
+# ruff: noqa: E501
+prompts: list[dict[str, str]] = [
+    # ── daily ──────────────────────────────────────────
+    {"text": "What made you smile today?", "category": "daily"},
+    {"text": "What was the best part of your day?", "category": "daily"},
+    {"text": "What小事 made you feel grateful this morning?", "category": "daily"},
+    {"text": "What's something you're looking forward to tomorrow?", "category": "daily"},
+    {"text": "Describe a moment today that felt like a gift.", "category": "daily"},
+    {"text": "What went better than expected today?", "category": "daily"},
+    {"text": "What's one thing that made you laugh today?", "category": "daily"},
+    {"text": "What's something you accomplished today, no matter how small?", "category": "daily"},
+    {"text": "Who or what made your day easier today?", "category": "daily"},
+    {"text": "What's a simple pleasure you enjoyed today?", "category": "daily"},
+    # ── people ─────────────────────────────────────────
+    {"text": "Who are you grateful to have in your life?", "category": "people"},
+    {
+        "text": "Think of a friend who supported you recently. What did they do?",
+        "category": "people",
+    },
+    {"text": "What's something a family member did that you appreciated?", "category": "people"},
+    {"text": "Who taught you something valuable?", "category": "people"},
+    {"text": "Describe a kind gesture someone showed you.", "category": "people"},
+    {"text": "Who made you feel seen or heard this week?", "category": "people"},
+    {
+        "text": "What's a memory with a loved one that always warms your heart?",
+        "category": "people",
+    },
+    {"text": "Who inspired you recently?", "category": "people"},
+    {"text": "Write about a conversation that lifted your spirits.", "category": "people"},
+    {"text": "What's something you admire about a colleague or classmate?", "category": "people"},
+    # ── nature ─────────────────────────────────────────
+    {"text": "What's something beautiful you saw in nature today?", "category": "nature"},
+    {"text": "Describe a sound in nature that you enjoy.", "category": "nature"},
+    {"text": "What's your favorite outdoor place to recharge?", "category": "nature"},
+    {"text": "What weather are you grateful for today?", "category": "nature"},
+    {"text": "Think of a plant or animal that crossed your path today.", "category": "nature"},
+    {"text": "What's a view that never gets old?", "category": "nature"},
+    {"text": "How did the sky look today?", "category": "nature"},
+    {
+        "text": "What's something in nature you took for granted but now appreciate?",
+        "category": "nature",
+    },
+    {
+        "text": "Describe a walk or commute where you noticed something beautiful.",
+        "category": "nature",
+    },
+    {"text": "What seasonal change are you most grateful for?", "category": "nature"},
+    # ── growth ─────────────────────────────────────────
+    {"text": "What's something new you learned recently?", "category": "growth"},
+    {"text": "What's a challenge that made you stronger?", "category": "growth"},
+    {"text": "What skill are you glad you developed?", "category": "growth"},
+    {"text": "What mistake taught you something valuable?", "category": "growth"},
+    {"text": "What's a habit you're proud of building?", "category": "growth"},
+    {"text": "What's a fear you've overcome or are working on?", "category": "growth"},
+    {"text": "What advice would your past self need to hear?", "category": "growth"},
+    {"text": "What book, podcast, or article changed your perspective?", "category": "growth"},
+    {"text": "What's something you understand better now than a year ago?", "category": "growth"},
+    {"text": "What's a goal you're grateful to be pursuing?", "category": "growth"},
+    # ── health ─────────────────────────────────────────
+    {
+        "text": "What's something your body did for you today that you're grateful for?",
+        "category": "health",
+    },
+    {"text": "What food or meal nourished you today?", "category": "health"},
+    {"text": "How did you move your body today?", "category": "health"},
+    {"text": "What helped you rest or sleep well recently?", "category": "health"},
+    {"text": "What's a healthy choice you made today?", "category": "health"},
+    {
+        "text": "What sensation felt good today — sunshine, a stretch, a deep breath?",
+        "category": "health",
+    },
+    {"text": "What's something your mind did well today?", "category": "health"},
+    {
+        "text": "What's a medical or health resource you're grateful to have access to?",
+        "category": "health",
+    },
+    {"text": "How did you practice self-care today?", "category": "health"},
+    {"text": "What energy level are you grateful for today?", "category": "health"},
+    # ── home ───────────────────────────────────────────
+    {"text": "What's your favorite spot in your home?", "category": "home"},
+    {"text": "What item in your home makes life easier or more pleasant?", "category": "home"},
+    {"text": "Describe a cozy moment at home.", "category": "home"},
+    {"text": "What's something about your living space that you love?", "category": "home"},
+    {"text": "What meal or drink did you enjoy at home recently?", "category": "home"},
+    {"text": "What's a smell or sound that makes your home feel like home?", "category": "home"},
+    {"text": "What's a recent improvement you made to your space?", "category": "home"},
+    {
+        "text": "What's something about your neighborhood or community you appreciate?",
+        "category": "home",
+    },
+    {"text": "What comfort object or ritual are you grateful for?", "category": "home"},
+    {"text": "What's something in your home that has a story behind it?", "category": "home"},
+    # ── opportunity ────────────────────────────────────
+    {"text": "What opportunity are you grateful for right now?", "category": "opportunity"},
+    {
+        "text": "What's a privilege in your life you don't want to take for granted?",
+        "category": "opportunity",
+    },
+    {
+        "text": "What educational or learning opportunity are you thankful for?",
+        "category": "opportunity",
+    },
+    {"text": "What's a door that opened for you recently?", "category": "opportunity"},
+    {"text": "What technology or tool are you grateful to have?", "category": "opportunity"},
+    {"text": "What freedom do you value most?", "category": "opportunity"},
+    {
+        "text": "What's something your past self did that created a good opportunity for you now?",
+        "category": "opportunity",
+    },
+    {"text": "What travel or experience are you grateful for?", "category": "opportunity"},
+    {"text": "What's a second chance you received?", "category": "opportunity"},
+    {"text": "What's an unexpected opportunity that came your way?", "category": "opportunity"},
+    # ── reflection ─────────────────────────────────────
+    {
+        "text": "What's something you used to worry about that turned out fine?",
+        "category": "reflection",
+    },
+    {"text": "What's a memory from this year that you'll cherish?", "category": "reflection"},
+    {"text": "What's something you're glad you said yes to?", "category": "reflection"},
+    {"text": "What's something you're glad you said no to?", "category": "reflection"},
+    {"text": "What tradition are you grateful for?", "category": "reflection"},
+    {"text": "What's a lesson life taught you that you're grateful for?", "category": "reflection"},
+    {"text": "What's a moment of serendipity or luck you experienced?", "category": "reflection"},
+    {
+        "text": "What's something you'd tell your younger self to appreciate more?",
+        "category": "reflection",
+    },
+    {"text": "What's a period of your life you look back on fondly?", "category": "reflection"},
+    {
+        "text": "What's something that turned out better than you expected?",
+        "category": "reflection",
+    },
+]
