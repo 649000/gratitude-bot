@@ -5,7 +5,7 @@ module "webhook_lambda" {
   function_name = "${local.project_name}-webhook-${var.environment}"
   description   = "Telegram webhook handler for ${local.project_name} (${var.environment})"
   handler       = "app.infrastructure.lambda_handler.handler"
-  runtime       = "python3.13"
+  runtime       = "python3.12"
   architectures = ["arm64"]
   memory_size   = var.lambda_memory_size
   timeout       = var.lambda_timeout
