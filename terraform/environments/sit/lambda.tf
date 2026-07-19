@@ -15,7 +15,7 @@ module "webhook_lambda" {
 
   source_path = [
     {
-      path             = "${path.module}/../../../app"
+      path             = "${path.module}/../../.."
       pip_requirements = "${path.module}/../../../requirements.txt"
     }
   ]
