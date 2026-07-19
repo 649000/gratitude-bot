@@ -13,13 +13,13 @@ dependencies = [
     "mangum>=0.19.0",
     "python-telegram-bot>=21.10.0",
     "httpx>=0.28.0",
-    "boto3>=1.35.0",
     "timezonefinder>=6.2.0",
     "pytz>=2024.2",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "boto3>=1.35.0",
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.0.0",
