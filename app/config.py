@@ -18,17 +18,28 @@ def _resolve_env_file(env: str) -> list[str] | None:
 
 def _try_ssm_overrides(s: "Settings") -> None:
     if not s.ssm_enabled:
+        logger.info("SSM overrides disabled")
         return
     try:
         from app.infrastructure.ssm import load_parameters
 
         params = load_parameters(s.env, s.ssm_parameter_path)
+        logger.info(
+            "SSM returned %d parameters for env=%s path=%s",
+            len(params),
+            s.env,
+            s.ssm_parameter_path,
+        )
         for key, value in params.items():
             if hasattr(s, key) and value is not None:
                 setattr(s, key, value)
                 logger.info("Overrode %s from SSM Parameter Store", key)
-    except Exception:
-        logger.warning("SSM override failed — continuing with env var values")
+            else:
+                logger.warning(
+                    "SSM key %r not found on Settings or value is None", key
+                )
+    except Exception as exc:
+        logger.warning("SSM override failed: %s: %s", type(exc).__name__, exc)
 
 
 class Settings(BaseSettings):
@@ -46,7 +57,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Gratitude Bot"
 
-    database_url: str = ""
+    database_url: str
     database_echo: bool = False
     db_schema: str = "gratitude_bot"
     db_pool_size: int = Field(default=5, ge=1)

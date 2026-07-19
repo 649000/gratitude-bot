@@ -6,7 +6,7 @@ module "webhook_lambda" {
   description   = "Telegram webhook handler for ${local.project_name} (${var.environment})"
   handler       = "app.infrastructure.lambda_handler.handler"
   runtime       = "python3.12"
-  architectures = ["arm64"]
+  architectures = ["x86_64"]
   memory_size   = var.lambda_memory_size
   timeout       = var.lambda_timeout
   publish       = true
@@ -15,7 +15,10 @@ module "webhook_lambda" {
 
   source_path = [
     {
-      path             = "${path.module}/../../.."
+      path          = "${path.module}/../../../app"
+      prefix_in_zip = "app"
+    },
+    {
       pip_requirements = "${path.module}/../../../requirements.txt"
     }
   ]
@@ -32,7 +35,7 @@ module "webhook_lambda" {
   policy_statements = {
     ssm_read = {
       effect    = "Allow"
-      actions   = ["ssm:GetParameters", "ssm:GetParameter"]
+      actions   = ["ssm:GetParametersByPath"]
       resources = ["arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_path}/*"]
     }
   }

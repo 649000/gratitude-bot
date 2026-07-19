@@ -44,7 +44,7 @@ module "webhook_lambda" {
   policy_statements = {
     ssm_read = {
       effect    = "Allow"
-      actions   = ["ssm:GetParameters", "ssm:GetParameter"]
+      actions   = ["ssm:GetParametersByPath"]
       resources = ["arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_path}/*"]
     }
   }

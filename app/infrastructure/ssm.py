@@ -51,7 +51,10 @@ def load_parameters(env: str, path: str = "/gratitude-bot") -> dict[str, str]:
                 key = p["Name"].split("/")[-1]
                 params[key] = p["Value"]
 
-        logger.info("Loaded %d parameters from SSM path %s", len(params), full_path)
+        if not params:
+            logger.warning("No parameters found at SSM path %s", full_path)
+        else:
+            logger.info("Loaded %d parameters from SSM path %s", len(params), full_path)
     except ImportError:
         logger.debug("boto3 not available — skipping SSM bulk load")
     except ClientError as e:

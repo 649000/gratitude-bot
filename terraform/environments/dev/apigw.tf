@@ -2,9 +2,9 @@ module "api_gateway" {
   source  = "terraform-aws-modules/apigateway-v2/aws"
   version = "~> 5.0"
 
-  name          = "${local.project_name}-webhook-${var.environment}"
-  description   = "HTTP API Gateway for ${local.project_name} Telegram webhook"
-  protocol_type = "HTTP"
+  name               = "${local.project_name}-webhook-${var.environment}"
+  description        = "HTTP API Gateway for ${local.project_name} Telegram webhook"
+  protocol_type      = "HTTP"
   create_domain_name = false
 
   cors_configuration = {

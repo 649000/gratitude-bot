@@ -16,7 +16,7 @@ terraform {
     organization = "nas-personal-projects"
     workspaces {
       project = "gratitude-bot"
-      name = "gratitude-bot-dev"
+      name    = "gratitude-bot-dev"
     }
   }
 }
