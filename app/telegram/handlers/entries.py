@@ -101,7 +101,7 @@ async def entries_month_callback(
         text += f"• {e.content[:80]}{'...' if len(e.content) > 80 else ''}\n"
 
     keyboard = [
-        [InlineKeyboardButton("◀️ Prev", callback_data=f"ep:{year}:{month}:0")]
+        [InlineKeyboardButton("▶️ Next", callback_data=f"ep:{year}:{month}:{ENTRIES_PER_PAGE}")]
         if len(entries) == ENTRIES_PER_PAGE
         else [],
         [InlineKeyboardButton("📅 By Day", callback_data=f"dy:{year}:{month}")]
@@ -138,7 +138,7 @@ async def entries_all_year_callback(
         text += f"• {e.content[:80]}{'...' if len(e.content) > 80 else ''}\n"
 
     keyboard = [
-        [InlineKeyboardButton("◀️ Prev", callback_data=f"ayp:{year}:0")]
+        [InlineKeyboardButton("▶️ Next", callback_data=f"ayp:{year}:{ENTRIES_PER_PAGE}")]
         if len(entries) == ENTRIES_PER_PAGE
         else [],
     ]

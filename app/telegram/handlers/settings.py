@@ -39,7 +39,7 @@ async def settings_command(
             callback_data="s:rediscovery",
         )],
         [InlineKeyboardButton(
-            f"📍 Timezone: {pref.timezone or 'UTC+8'}",
+            f"📍 Timezone: {db_user.timezone or 'UTC+8'}",
             callback_data="s:timezone",
         )],
     ]
@@ -112,7 +112,7 @@ async def settings_toggle_callback(
                 callback_data="s:rediscovery",
             )],
             [InlineKeyboardButton(
-                f"📍 Timezone: {pref.timezone or 'UTC+8'}",
+                f"📍 Timezone: {db_user.timezone or 'UTC+8'}",
                 callback_data="s:timezone",
             )],
         ]
@@ -132,7 +132,7 @@ async def settings_timezone_callback(
     async with get_session() as session:
         db_user = await get_or_create_user(session, telegram_id=query.from_user.id)
         pref = await get_or_create_preferences(session, db_user.id)
-        pref.timezone = tz
+        db_user.timezone = tz
         await session.commit()
 
         keyboard = [

@@ -87,15 +87,10 @@ async def onboard_location_callback(
     query = update.callback_query
     await query.answer()
 
-    keyboard = [[
-        InlineKeyboardButton(
-            "📍 Share Location", callback_data="onboard_share_location"
-        )
-    ]]
     await query.edit_message_text(
-        "Tap the button below to share your location, "
-        "then I'll detect your timezone automatically.",
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        "Use the 📎 attachment menu below to share your location "
+        "and I'll detect your timezone automatically.\n\n"
+        "Or use /timezone to set it manually.",
     )
 
 
@@ -149,7 +144,7 @@ async def location_callback(
     async with get_session() as session:
         db_user = await get_or_create_user(session, telegram_id=message.from_user.id)
         pref = await get_or_create_preferences(session, db_user.id)
-        pref.timezone = offset_str
+        db_user.timezone = offset_str
         await session.commit()
 
     keyboard = [
@@ -174,7 +169,7 @@ async def timezone_selected_callback(
     async with get_session() as session:
         db_user = await get_or_create_user(session, telegram_id=query.from_user.id)
         pref = await get_or_create_preferences(session, db_user.id)
-        pref.timezone = tz
+        db_user.timezone = tz
         await session.commit()
 
     keyboard = [

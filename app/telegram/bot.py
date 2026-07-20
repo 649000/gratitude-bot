@@ -1,5 +1,11 @@
+import html
+import logging
+import traceback
+
+from telegram import Update
 from telegram.ext import (
     Application,
+    CallbackContext,
     CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
@@ -7,6 +13,9 @@ from telegram.ext import (
 )
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
+
 from app.telegram.handlers.callbacks import delete_callback, star_callback
 from app.telegram.handlers.entries import (
     entries_all_year_callback,
@@ -54,7 +63,7 @@ def build_application() -> Application:
 
     app.add_handler(CallbackQueryHandler(onboard_location_callback, pattern="^onboard_location$"))
     app.add_handler(CallbackQueryHandler(onboard_manual_callback, pattern="^onboard_manual$"))
-    app.add_handler(CallbackQueryHandler(location_callback, pattern="^onboard_share_location$"))
+    app.add_handler(MessageHandler(filters.LOCATION, location_callback))
     app.add_handler(CallbackQueryHandler(timezone_selected_callback, pattern="^tz:"))
     app.add_handler(CallbackQueryHandler(prefs_all_callback, pattern="^prefs:all$"))
     app.add_handler(CallbackQueryHandler(prefs_choose_callback, pattern="^prefs:choose$"))
@@ -76,7 +85,31 @@ def build_application() -> Application:
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, save_entry_handler))
 
+    app.add_error_handler(error_handler)
+
     return app
+
+
+async def error_handler(update: object, context: CallbackContext) -> None:
+    tb = "".join(
+        traceback.format_exception(None, context.error, context.error.__traceback__)
+    )
+    msg = (
+        f"<b>⚠️ {html.escape(type(context.error).__name__)}</b>\n"
+        f"<pre>{html.escape(tb[:3500])}</pre>"
+    )
+    if update and isinstance(update, Update):
+        msg += f"\n<b>Update:</b>\n<pre>{html.escape(str(update)[:1000])}</pre>"
+
+    logger.error("Unhandled exception: %s", context.error, exc_info=context.error)
+    try:
+        await context.bot.send_message(
+            chat_id=settings.telegram_error_chat_id,
+            text=msg,
+            parse_mode="HTML",
+        )
+    except Exception as exc:
+        logger.error("Failed to send error to Telegram: %s", exc)
 
 
 async def get_application() -> Application:

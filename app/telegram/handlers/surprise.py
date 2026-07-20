@@ -1,6 +1,7 @@
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
+from telegram.helpers import escape_markdown
 
 from app.telegram.handlers.db import (
     get_or_create_user,
@@ -33,8 +34,8 @@ async def surprise_command(
     ]
     await update.message.reply_text(
         f"🎁 Here's a surprise from your jar:\n\n"
-        f"\"{entry.content}\"\n\n"
-        f"_{entry.created_at.strftime('%Y-%m-%d %H:%M')}_",
+        f"\"{escape_markdown(entry.content, version=1)}\"\n\n"
+        f"_{escape_markdown(entry.created_at.strftime('%Y-%m-%d %H:%M'), version=1)}_",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )

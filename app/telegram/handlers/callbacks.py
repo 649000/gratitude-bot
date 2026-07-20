@@ -25,8 +25,11 @@ async def star_callback(
 
             keyboard = query.message.reply_markup.inline_keyboard
             if keyboard:
-                keyboard[0][0].callback_data = f"star:{entry_id}"
                 keyboard[0][0].text = star_label
+                keyboard[0][0].callback_data = f"star:{entry_id}"
+                await query.edit_message_reply_markup(
+                    reply_markup=query.message.reply_markup
+                )
         else:
             await query.answer("Entry not found")
 

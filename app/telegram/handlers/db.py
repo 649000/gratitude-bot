@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from datetime import datetime
 
 from sqlalchemy import func, select
@@ -12,6 +13,7 @@ from app.models.prompt import Prompt
 from app.models.user import User
 
 
+@asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession]:
     async with async_session_factory() as session:
         yield session
@@ -187,7 +189,7 @@ async def delete_entry(
 ) -> bool:
     entry = await session.get(GratitudeEntry, entry_id)
     if entry:
-        await session.delete(entry)
+        session.delete(entry)
         await session.flush()
         return True
     return False
