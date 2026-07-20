@@ -79,8 +79,9 @@ def build_application() -> Application:
     return app
 
 
-def get_application() -> Application:
+async def get_application() -> Application:
     global _application
     if _application is None:
         _application = build_application()
+        await _application.initialize()
     return _application

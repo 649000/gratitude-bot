@@ -8,7 +8,7 @@ router = APIRouter(tags=["telegram"])
 
 @router.post("/telegram/webhook")
 async def telegram_webhook(request: Request) -> dict:
-    bot = get_application()
+    bot = await get_application()
     data = await request.json()
 
     update = Update.de_json(data, bot.bot)
