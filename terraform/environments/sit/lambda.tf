@@ -59,6 +59,15 @@ module "webhook_lambda" {
       actions   = ["kms:Decrypt"]
       resources = ["*"]
     }
+    sqs_read = {
+      effect    = "Allow"
+      actions   = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+      ]
+      resources = [aws_sqs_queue.outgoing.arn]
+    }
   }
 
   allowed_triggers = {
@@ -66,7 +75,18 @@ module "webhook_lambda" {
       service    = "apigateway"
       source_arn = "${module.api_gateway.api_execution_arn}/*/*"
     }
+    AllowExecutionFromSQS = {
+      service    = "sqs"
+      source_arn = aws_sqs_queue.outgoing.arn
+    }
   }
 
   tags = local.common_tags
+}
+
+resource "aws_lambda_event_source_mapping" "webhook_sqs" {
+  event_source_arn = aws_sqs_queue.outgoing.arn
+  function_name    = module.webhook_lambda.lambda_function_arn
+  batch_size       = 10
+  enabled          = true
 }

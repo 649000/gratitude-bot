@@ -49,7 +49,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    env: Literal["dev", "sit", "prod"] = Field(
+    env: Literal["dev", "sit", "prod", "test"] = Field(
         default="dev",
         validation_alias="APP_ENV",
     )
