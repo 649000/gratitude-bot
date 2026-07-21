@@ -1,4 +1,4 @@
-# Local development - MUST be before other patterns
+# Local development
 .venv
 .venv/
 venv/
@@ -8,7 +8,6 @@ env/
 *.pyc
 __pycache__/
 *.egg-info/
-gratitude_bot.egg-info/
 .DS_Store
 
 # Build artifacts
@@ -38,9 +37,35 @@ htmlcov/
 .tox/
 tests/
 
-# Database migrations (not needed in Lambda)
+# Database migrations
 alembic/
 alembic.ini
+
+# Docs & specs
+openspec/
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+docker-compose.yml
+Dockerfile
+
+# Dev tooling
+.agents/
+.githooks/
+Makefile
+.pyproject.toml
+uv.lock
+skills-lock.json
+.pre-commit-config.yaml
+.env.example
+
+# Git
+.git/
+.gitignore
 
 # Terraform state (local)
 *.tfstate
@@ -49,30 +74,7 @@ alembic.ini
 .terraform.lock.hcl
 crash.log
 
-# Project-specific
-openspec/
-docker-compose.yml
-Dockerfile
-Makefile
-docker/
-scripts/
-
-# Git
-.git/
-.gitignore
-.githooks/
-
-# Documentation
-README*
-*.md
-LICENSE
-
-# CI/CD
-.github/
-.gitlab-ci.yml
-
 # OS
-.DS_Store
 Thumbs.db
 
 

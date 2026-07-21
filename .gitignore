@@ -9,6 +9,7 @@ build/
 coverage/
 htmlcov/
 .ruff_cache/
+.mypy_cache/
 .venv/
 venv/
 env/
@@ -28,3 +29,7 @@ env/
 .terraform.lock.hcl
 terraform.tfvars
 *.tfplan
+
+# Build artifacts
+package/
+node_modules/
