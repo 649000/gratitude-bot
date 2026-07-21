@@ -20,7 +20,6 @@ variable "telegram_bot_token" {
   description = "Telegram bot token"
   type        = string
   sensitive   = true
-  default     = ""
 }
 
 variable "lambda_memory_size" {

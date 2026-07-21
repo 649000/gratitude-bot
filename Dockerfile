@@ -2,11 +2,15 @@ FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-COPY pyproject.toml .
+COPY pyproject.toml requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip setuptools && \
-    pip install --no-cache-dir .
+    pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY src/ ./src/
+COPY alembic/ ./alembic/
+COPY alembic.ini .
+
+RUN pip install --no-cache-dir -e .
 
 FROM builder AS production
 

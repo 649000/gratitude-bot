@@ -1,3 +1,7 @@
 #!/bin/sh
+# Regenerate requirements.txt from pyproject.toml.
+# This ensures Terraform's Lambda packaging (which uses
+# pip_requirements from requirements.txt) deploys with the
+# latest dependencies matching pyproject.toml.
 uv pip compile pyproject.toml -o requirements.txt
 git add requirements.txt

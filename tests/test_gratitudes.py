@@ -1,55 +1,25 @@
 import pytest
-from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
-
-
-@pytest.mark.asyncio
-async def test_create_gratitude(client: AsyncClient, session):
-    user = User(
-        telegram_id=123456789,
-        username="testuser",
-        first_name="Test",
-    )
-    session.add(user)
-    await session.flush()
-
-    response = await client.post(
-        "/api/v1/gratitudes",
-        params={"user_id": str(user.id)},
-        json={"content": "I am grateful for this test"},
-    )
-    assert response.status_code == 201
-    data = response.json()
-    assert data["content"] == "I am grateful for this test"
-    assert data["user_id"] == str(user.id)
+from app.telegram.handlers.db import create_entry, get_entries, get_or_create_user
 
 
 @pytest.mark.asyncio
-async def test_list_gratitudes(client: AsyncClient, session):
-    user = User(
-        telegram_id=987654321,
-        username="another",
+async def test_create_entry_via_db(session: AsyncSession):
+    user = await get_or_create_user(
+        session, telegram_id=123456789, username="testuser", first_name="Test"
     )
-    session.add(user)
-    await session.flush()
+    entry = await create_entry(session, user.id, "I am grateful for this test")
+    assert entry.content == "I am grateful for this test"
+    assert entry.user_id == user.id
+    assert entry.source == "telegram"
 
-    from app.models.gratitude import GratitudeEntry
 
+@pytest.mark.asyncio
+async def test_list_entries_via_db(session: AsyncSession):
+    user = await get_or_create_user(session, telegram_id=987654321, username="another")
     for i in range(3):
-        session.add(
-            GratitudeEntry(
-                user_id=user.id,
-                content=f"Gratitude {i}",
-                source="telegram",
-            )
-        )
-    await session.flush()
+        await create_entry(session, user.id, f"Gratitude {i}")
 
-    response = await client.get(
-        "/api/v1/gratitudes",
-        params={"user_id": str(user.id)},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 3
+    entries = await get_entries(session, user.id)
+    assert len(entries) == 3

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "aws-serverless": {
+      "source": "aws/agent-toolkit-for-aws",
+      "sourceType": "github",
+      "skillPath": "skills/core-skills/aws-serverless/SKILL.md",
+      "computedHash": "d77c3b81316464f4b4e9c913a6c75e9380da2d8cf64d439f0a56c75233571b97"
+    },
+    "fastapi": {
+      "source": "fastapi/fastapi",
+      "sourceType": "github",
+      "skillPath": "fastapi/.agents/skills/fastapi/SKILL.md",
+      "computedHash": "e85d9e223fbc3183b1a599bbe8b02d2edf275d046ff5bcfd14352c92cdff52b3"
+    },
+    "fastapi-python": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "fastapi-python/SKILL.md",
+      "computedHash": "1d7346210a6690d2faeb089f074c0dc20a7056c2c83ac1062a11c1b73158be72"
+    },
+    "python-design-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/python-development/skills/python-design-patterns/SKILL.md",
+      "computedHash": "593f109cffd8f81019e364102ee239053c7f4477c8ad901b9551fc4afaf22bd0"
+    },
+    "refactor-module": {
+      "source": "hashicorp/terraform-agent-kit",
+      "sourceType": "github",
+      "skillPath": "terraform/module-generation/skills/refactor-module/SKILL.md",
+      "computedHash": "69059424621c33cacf429c19ec6f8be7ed8478f0531638e5f756d33bfa99dfcb"
+    },
+    "sqlmodel": {
+      "source": "fastapi/sqlmodel",
+      "sourceType": "github",
+      "skillPath": "sqlmodel/.agents/skills/sqlmodel/SKILL.md",
+      "computedHash": "575530f00a0ad06f813c3b0d82249c376ca79dc81c6f19565033044086c50f17"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "ec56a54fba0e97bee52c7f244ba603bb284bf8d1b739c66a5cc84ec3df709d9d"
+    },
+    "terraform-style-guide": {
+      "source": "hashicorp/terraform-agent-kit",
+      "sourceType": "github",
+      "skillPath": "terraform/code-generation/skills/terraform-style-guide/SKILL.md",
+      "computedHash": "e7776668ff288f856a8f9bb8bb3301dd2c78c70102d81fb1027c059b01f6b07b"
+    }
+  }
+}
