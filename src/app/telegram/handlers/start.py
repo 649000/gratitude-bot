@@ -7,6 +7,22 @@ from app.telegram.handlers.db import (
     get_or_create_user,
     get_session,
 )
+from app.telegram.messages import (
+    EMOJI_CHECK,
+    EMOJI_CROSS,
+    EMOJI_LOCATION,
+    HELP_BTN_ENTRIES,
+    HELP_BTN_GRATEFUL,
+    HELP_BTN_STATS,
+    ONBOARD_ALL_DONE,
+    ONBOARD_INTRO,
+    ONBOARD_LOCATION_PROMPT,
+    ONBOARD_PREFS_EXPLAINER,
+    ONBOARD_SIMPLE_DONE,
+    PREF_TOGGLE_PROMPT,
+    TZ_SELECT,
+    WELCOME_BACK,
+)
 
 TIMEZONE_OFFSETS = [
     ("UTC-12", "UTC-12"),
@@ -51,8 +67,22 @@ async def start_command(update: Update, _context: CallbackContext) -> None:
         pref = await get_or_create_preferences(session, db_user.id)
 
         if pref.onboarding_completed:
-            await update.message.reply_text(
-                f"Welcome back, {user.first_name}! You're all set. Use /grateful to write an entry."
+            from app.telegram.handlers.db import get_entry_count, get_streak
+
+            count = await get_entry_count(session, db_user.id)
+            streak = await get_streak(session, db_user.id)
+            keyboard = InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(HELP_BTN_GRATEFUL, callback_data="nav:grateful"),
+                        InlineKeyboardButton(HELP_BTN_ENTRIES, callback_data="nav:entries"),
+                    ],
+                    [InlineKeyboardButton(HELP_BTN_STATS, callback_data="nav:stats")],
+                ]
+            )
+            await update.effective_message.reply_text(
+                WELCOME_BACK.format(name=user.first_name, count=count, streak=streak),
+                reply_markup=keyboard,
             )
             return
 
@@ -60,15 +90,14 @@ async def start_command(update: Update, _context: CallbackContext) -> None:
 
     keyboard = [
         [
-            InlineKeyboardButton("📍 Send Location", callback_data="onboard_location"),
+            InlineKeyboardButton(
+                f"{EMOJI_LOCATION} Send Location", callback_data="onboard_location"
+            ),
             InlineKeyboardButton("🔧 Set Manually", callback_data="onboard_manual"),
         ]
     ]
-    await update.message.reply_text(
-        f"Welcome to Gratitude Jar, {user.first_name}! 🫙\n\n"
-        "First, let's set your timezone so I can send you "
-        "messages at the right time.\n\n"
-        "How would you like to set it?",
+    await update.effective_message.reply_text(
+        ONBOARD_INTRO.format(name=user.first_name),
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -76,12 +105,7 @@ async def start_command(update: Update, _context: CallbackContext) -> None:
 async def onboard_location_callback(update: Update, _context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
-
-    await query.edit_message_text(
-        "Use the 📎 attachment menu below to share your location "
-        "and I'll detect your timezone automatically.\n\n"
-        "Or use /timezone to set it manually.",
-    )
+    await query.edit_message_text(ONBOARD_LOCATION_PROMPT)
 
 
 async def onboard_manual_callback(update: Update, _context: CallbackContext) -> None:
@@ -93,13 +117,13 @@ async def onboard_manual_callback(update: Update, _context: CallbackContext) -> 
         keyboard.append([InlineKeyboardButton(label, callback_data=f"tz:{tz}")])
 
     await query.edit_message_text(
-        "Select your timezone:",
+        TZ_SELECT,
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
 async def location_callback(update: Update, _context: CallbackContext) -> None:
-    message = update.message
+    message = update.effective_message
     if not message.location:
         return
 
@@ -137,12 +161,12 @@ async def location_callback(update: Update, _context: CallbackContext) -> None:
 
     keyboard = [
         [
-            InlineKeyboardButton("✅ All of them", callback_data="prefs:all"),
+            InlineKeyboardButton(f"{EMOJI_CHECK} All of them", callback_data="prefs:all"),
             InlineKeyboardButton("🔧 Choose", callback_data="prefs:choose"),
         ]
     ]
     await message.reply_text(
-        f"Timezone set to {offset_str}. Now let's set your preferences.",
+        ONBOARD_PREFS_EXPLAINER.format(tz=offset_str),
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -160,12 +184,12 @@ async def timezone_selected_callback(update: Update, _context: CallbackContext) 
 
     keyboard = [
         [
-            InlineKeyboardButton("✅ All of them", callback_data="prefs:all"),
+            InlineKeyboardButton(f"{EMOJI_CHECK} All of them", callback_data="prefs:all"),
             InlineKeyboardButton("🔧 Choose", callback_data="prefs:choose"),
         ]
     ]
     await query.edit_message_text(
-        f"Timezone set to {tz}. Now let's set your preferences.",
+        ONBOARD_PREFS_EXPLAINER.format(tz=tz),
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -185,15 +209,7 @@ async def prefs_all_callback(update: Update, _context: CallbackContext) -> None:
         await complete_onboarding(session, db_user.id)
         await session.commit()
 
-    await query.edit_message_text(
-        "All set! Here's what you've enabled:\n\n"
-        "⏰ Evening reminder (if no entry today)\n"
-        "📅 Weekly digest (Sunday)\n"
-        "📅 Monthly digest (last day)\n"
-        "📅 Yearly digest (Dec 31)\n"
-        "🎁 Random rediscovery (4-6x/week)\n\n"
-        "Try /grateful to write your first entry!"
-    )
+    await query.edit_message_text(ONBOARD_ALL_DONE)
 
 
 async def prefs_choose_callback(update: Update, context: CallbackContext) -> None:
@@ -209,15 +225,15 @@ async def prefs_choose_callback(update: Update, context: CallbackContext) -> Non
     }
 
     keyboard = [
-        [InlineKeyboardButton("✅ Daily Reminder", callback_data="toggle:reminder")],
-        [InlineKeyboardButton("✅ Weekly Digest", callback_data="toggle:weekly")],
-        [InlineKeyboardButton("✅ Monthly Digest", callback_data="toggle:monthly")],
-        [InlineKeyboardButton("✅ Yearly Digest", callback_data="toggle:yearly")],
-        [InlineKeyboardButton("✅ Rediscovery", callback_data="toggle:rediscovery")],
+        [InlineKeyboardButton(f"{EMOJI_CHECK} Daily Reminder", callback_data="toggle:reminder")],
+        [InlineKeyboardButton(f"{EMOJI_CHECK} Weekly Digest", callback_data="toggle:weekly")],
+        [InlineKeyboardButton(f"{EMOJI_CHECK} Monthly Digest", callback_data="toggle:monthly")],
+        [InlineKeyboardButton(f"{EMOJI_CHECK} Yearly Digest", callback_data="toggle:yearly")],
+        [InlineKeyboardButton(f"{EMOJI_CHECK} Rediscovery", callback_data="toggle:rediscovery")],
         [InlineKeyboardButton("💾 Done", callback_data="prefs:done")],
     ]
     await query.edit_message_text(
-        "Tap to toggle each preference:\n",
+        PREF_TOGGLE_PROMPT,
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -232,7 +248,7 @@ async def toggle_preference_callback(update: Update, context: CallbackContext) -
     context.chat_data["onboard_prefs"] = prefs
 
     def emoji(val: bool) -> str:
-        return "✅" if val else "❌"
+        return EMOJI_CHECK if val else EMOJI_CROSS
 
     keyboard = [
         [
@@ -284,4 +300,4 @@ async def prefs_done_callback(update: Update, _context: CallbackContext) -> None
         await complete_onboarding(session, db_user.id)
         await session.commit()
 
-    await query.edit_message_text("You're all set! Try /grateful to write your first entry.")
+    await query.edit_message_text(ONBOARD_SIMPLE_DONE)

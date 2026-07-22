@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.telegram.messages import EMOJI_GIFT, EMOJI_JAR
 from scheduler.common.database import async_session_factory
 from scheduler.common.models import GratitudeEntry, ScheduledMessage, User, UserPreference
 
@@ -123,10 +124,13 @@ def build_sqs_payload_from_entry(
     chat_id: int,
     prefix: str = "",
 ) -> str:
-    star_label = "\u2b50 Unstar" if entry.starred else "\u2b50 Star"
+    from app.telegram.messages import EMOJI_DELETE, EMOJI_STAR, format_entry_date
+
+    date_str = format_entry_date(entry.created_at)
+    star_label = f"{EMOJI_STAR} Unstar" if entry.starred else f"{EMOJI_STAR} Star"
     entry_lines = [
         f'{prefix}"{entry.content}"',
-        f"_{entry.created_at.strftime('%Y-%m-%d %H:%M')}_",
+        f"_{date_str}_",
     ]
     text = "\n\n".join(entry_lines)
 
@@ -134,7 +138,7 @@ def build_sqs_payload_from_entry(
         "inline_keyboard": [
             [
                 {"text": star_label, "callback_data": f"star:{entry.id}"},
-                {"text": "\U0001f5d1 Delete", "callback_data": f"del:{entry.id}"},
+                {"text": f"{EMOJI_DELETE} Delete", "callback_data": f"del:{entry.id}"},
             ]
         ]
     }
@@ -151,11 +155,13 @@ def build_sqs_payload_for_digest(
     msg: ScheduledMessage,
     chat_id: int,
 ) -> str:
+    from app.telegram.messages import EMOJI_STAR
+
     keyboard = []
     for entry_id in msg.entry_ids:
         keyboard.append(
             [
-                {"text": "\u2b50 Star", "callback_data": f"star:{entry_id}"},
+                {"text": f"{EMOJI_STAR} Star", "callback_data": f"star:{entry_id}"},
             ]
         )
 
@@ -243,7 +249,7 @@ async def dispatch_reminders(queue_url: str) -> dict:
 
         payload = {
             "chat_id": user.telegram_id,
-            "text": f"How was your day? \U0001fad9\n\n_{prompt}_",
+            "text": f"How was your day? {EMOJI_JAR}\n\n_{prompt}_",
             "parse_mode": "Markdown",
         }
         try:
@@ -300,7 +306,7 @@ async def dispatch_rediscovery(queue_url: str) -> dict:
             payload = build_sqs_payload_from_entry(
                 entry,
                 user.telegram_id,
-                prefix="\U0001f381 Here's a surprise from your jar:\n\n",
+                prefix=f"{EMOJI_GIFT} Here's a surprise from your jar:\n\n",
             )
             await session.commit()
 
@@ -318,7 +324,11 @@ async def _get_random_prompt(session) -> str:
 
     result = await session.execute(select(Prompt).order_by(func.random()).limit(1))
     prompt = result.scalar_one_or_none()
-    return prompt.text if prompt else "What are you grateful for today?"
+    if prompt:
+        return prompt.text
+    from app.telegram.messages import FALLBACK_PROMPT
+
+    return FALLBACK_PROMPT
 
 
 async def handle_dispatch(queue_url: str) -> dict:

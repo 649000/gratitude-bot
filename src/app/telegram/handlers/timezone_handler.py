@@ -1,63 +1,74 @@
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
-from app.telegram.handlers.db import (
-    get_session,
-    update_user,
-)
-
-TIMEZONE_MAP = {
-    "UTC-12": "UTC-12",
-    "UTC-11": "UTC-11",
-    "UTC-10": "UTC-10",
-    "UTC-9": "UTC-9",
-    "UTC-8": "UTC-8",
-    "UTC-7": "UTC-7",
-    "UTC-6": "UTC-6",
-    "UTC-5": "UTC-5",
-    "UTC-4": "UTC-4",
-    "UTC-3": "UTC-3",
-    "UTC-2": "UTC-2",
-    "UTC-1": "UTC-1",
-    "UTC": "UTC",
-    "UTC+1": "UTC+1",
-    "UTC+2": "UTC+2",
-    "UTC+3": "UTC+3",
-    "UTC+4": "UTC+4",
-    "UTC+5": "UTC+5",
-    "UTC+5:30": "UTC+5:30",
-    "UTC+6": "UTC+6",
-    "UTC+7": "UTC+7",
-    "UTC+8": "UTC+8",
-    "UTC+9": "UTC+9",
-    "UTC+10": "UTC+10",
-    "UTC+11": "UTC+11",
-    "UTC+12": "UTC+12",
-}
+from app.telegram.handlers.db import get_or_create_user, get_session
+from app.telegram.messages import EMOJI_LOCATION, TZ_COMMON_OFFSETS, TZ_INVALID, TZ_PROMPT, TZ_SET
 
 
-async def timezone_command(update: Update, _context: CallbackContext) -> None:
-    args = _context.args if _context.args else []
-
-    if not args:
-        await update.message.reply_text(
-            "Usage: /timezone UTC+8\n\nSupported formats: UTC-12 to UTC+12 (e.g. UTC+8, UTC-5, UTC)"
+async def timezone_command(update: Update, context: CallbackContext) -> None:
+    args = context.args
+    user = update.effective_user
+    async with get_session() as session:
+        db_user = await get_or_create_user(
+            session,
+            telegram_id=user.id,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
         )
+        current_tz = db_user.timezone or "UTC+8"
+
+    if args:
+        tz = args[0]
+        valid_offsets = (
+            {f"UTC{-i}" for i in range(-12, 13)} | {f"UTC+{i}" for i in range(0, 13)} | {"UTC"}
+        )
+        if tz not in valid_offsets:
+            await update.effective_message.reply_text(TZ_INVALID.format(tz_input=tz))
+            return
+
+        db_user.timezone = tz
+        await session.commit()
+        await update.effective_message.reply_text(TZ_SET.format(tz=tz))
         return
 
-    tz_input = " ".join(args)
-    tz = tz_input.upper().replace(" ", "")
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                f"{EMOJI_LOCATION} Share Location",
+                callback_data="onboard_location",
+            )
+        ],
+    ]
+    row = []
+    for label, tz in TZ_COMMON_OFFSETS:
+        row.append(InlineKeyboardButton(label, callback_data=f"tzq:{tz}"))
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
 
-    if tz not in TIMEZONE_MAP:
-        await update.message.reply_text(
-            f"Invalid timezone: {tz_input}\n\nSupported: UTC-12 to UTC+12 (e.g. UTC+8, UTC-5, UTC)"
-        )
-        return
+    await update.effective_message.reply_text(
+        TZ_PROMPT.format(tz=current_tz),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
 
-    tz = TIMEZONE_MAP[tz]
+
+async def timezone_quick_callback(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    tz = query.data.split(":", 1)[1]
 
     async with get_session() as session:
-        await update_user(session, telegram_id=update.effective_user.id, timezone=tz)
+        user = await get_or_create_user(
+            session,
+            telegram_id=query.from_user.id,
+            username=query.from_user.username,
+            first_name=query.from_user.first_name,
+            last_name=query.from_user.last_name,
+        )
+        user.timezone = tz
         await session.commit()
 
-    await update.message.reply_text(f"Timezone set to {tz}")
+    await query.edit_message_text(TZ_SET.format(tz=tz))

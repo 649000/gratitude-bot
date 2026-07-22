@@ -40,6 +40,10 @@ def _handle_sqs(event: dict, _context: object) -> dict:
     from app.telegram.sqs_handler import handle_sqs_records
 
     records = event.get("Records", [])
-    result = asyncio.run(handle_sqs_records(records))
-    logger.info("SQS batch processed: %s", json.dumps(result))
-    return result
+    try:
+        result = asyncio.run(handle_sqs_records(records))
+        logger.info("SQS batch processed: %s", json.dumps(result))
+        return result
+    except Exception:
+        logger.exception("SQS batch handler crashed")
+        return {"status": "error", "records_processed": 0}

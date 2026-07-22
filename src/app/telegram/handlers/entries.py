@@ -1,221 +1,293 @@
+from collections import defaultdict
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 
 from app.telegram.handlers.db import (
-    get_distinct_days,
+    count_entries_filtered,
     get_distinct_months,
     get_distinct_years,
     get_entries,
     get_or_create_user,
     get_session,
 )
+from app.telegram.messages import (
+    EMOJI_CALENDAR,
+    EMOJI_NEXT,
+    EMOJI_PREV,
+    EMOJI_STAR,
+    ENTRIES_PAGE_HEADER,
+    JAR_EMPTY,
+    MONTH_SELECT,
+    NO_ENTRIES_PERIOD,
+    NO_MORE_ENTRIES,
+    YEAR_SELECT,
+    _escape_md,
+    format_entry_date_local,
+    format_entry_date_short,
+)
 
-ENTRIES_PER_PAGE = 5
+
+async def _safe_edit(query, text, **kwargs):
+    try:
+        await query.edit_message_text(text, **kwargs)
+    except BadRequest as e:
+        if "Message is not modified" not in str(e):
+            raise
+
+_MONTH_SHORT = {
+    1: "Jan",
+    2: "Feb",
+    3: "Mar",
+    4: "Apr",
+    5: "May",
+    6: "Jun",
+    7: "Jul",
+    8: "Aug",
+    9: "Sep",
+    10: "Oct",
+    11: "Nov",
+    12: "Dec",
+}
+_MONTH_FULL = {
+    1: "January",
+    2: "February",
+    3: "March",
+    4: "April",
+    5: "May",
+    6: "June",
+    7: "July",
+    8: "August",
+    9: "September",
+    10: "October",
+    11: "November",
+    12: "December",
+}
 
 
-async def entries_command(update: Update, _context: CallbackContext) -> None:
+async def _resolve_user(session, update):
     user = update.effective_user
+    return await get_or_create_user(
+        session,
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+    )
+
+
+def _group_by_day(entries, tz: str) -> list[tuple[str, list]]:
+    groups: dict[str, list] = defaultdict(list)
+    for e in entries:
+        day_label = format_entry_date_short(e.created_at, tz)
+        groups[day_label].append(e)
+    return list(groups.items())
+
+
+def _render_entries(entries, tz: str, show_day_header: bool = True) -> str:
+    if show_day_header and entries:
+        grouped = _group_by_day(entries, tz)
+        lines = []
+        for day_label, day_entries in grouped:
+            lines.append(f"*{day_label}*")
+            for e in day_entries:
+                star = f"{EMOJI_STAR} " if e.starred else "     "
+                snippet = e.content[:70] + ("..." if len(e.content) > 70 else "")
+                lines.append(f'{star}"{_escape_md(snippet)}"')
+            lines.append("")
+        return "\n".join(lines)
+    else:
+        lines = []
+        for e in entries:
+            star = EMOJI_STAR if e.starred else ""
+            date_str = format_entry_date_local(e.created_at, tz)
+            snippet = e.content[:70] + ("..." if len(e.content) > 70 else "")
+            lines.append(f"{_escape_md(date_str)} \u00b7 {star} {_escape_md(snippet)}")
+        return "\n".join(lines)
+
+
+async def entries_command(update: Update, context: CallbackContext) -> None:
     async with get_session() as session:
-        db_user = await get_or_create_user(session, telegram_id=user.id)
+        db_user = await _resolve_user(session, update)
         years = await get_distinct_years(session, db_user.id)
-        await session.commit()
 
     if not years:
-        await update.message.reply_text(
-            "Your jar is empty! Write your first entry with /grateful 🫙"
-        )
+        await update.effective_message.reply_text(JAR_EMPTY)
         return
 
     keyboard = [[InlineKeyboardButton(str(y), callback_data=f"y:{y}")] for y in years]
-    await update.message.reply_text(
-        "📅 Select a year:",
+    await update.effective_message.reply_text(
+        YEAR_SELECT,
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
-async def entries_year_callback(update: Update, _context: CallbackContext) -> None:
+async def entries_year_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    year = int(query.data.split(":", 1)[1])
     await query.answer()
+    year = int(query.data.split(":", 1)[1])
 
     async with get_session() as session:
-        db_user = await get_or_create_user(session, telegram_id=query.from_user.id)
+        db_user = await _resolve_user(session, update)
         months = await get_distinct_months(session, db_user.id, year)
-        await session.commit()
 
     if not months:
-        await query.edit_message_text(f"No entries found for {year}.")
+        await _safe_edit(query, NO_ENTRIES_PERIOD.format(period=str(year)))
         return
 
-    month_names = {
-        1: "Jan",
-        2: "Feb",
-        3: "Mar",
-        4: "Apr",
-        5: "May",
-        6: "Jun",
-        7: "Jul",
-        8: "Aug",
-        9: "Sep",
-        10: "Oct",
-        11: "Nov",
-        12: "Dec",
-    }
-    keyboard = [
-        [InlineKeyboardButton(f"{month_names[m]}", callback_data=f"m:{year}:{m}")] for m in months
-    ]
-    keyboard.append([InlineKeyboardButton("📅 All Year", callback_data=f"ay:{year}")])
-    await query.edit_message_text(
-        f"📅 Select a month in {year}:",
+    keyboard = []
+    for m in months:
+        keyboard.append([InlineKeyboardButton(_MONTH_SHORT[m], callback_data=f"m:{year}:{m}")])
+    keyboard.append(
+        [InlineKeyboardButton(f"{EMOJI_CALENDAR} All Year", callback_data=f"ay:{year}")]
+    )
+
+    await _safe_edit(
+        query,
+        MONTH_SELECT.format(year=year),
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
-
-async def entries_month_callback(update: Update, _context: CallbackContext) -> None:
+async def entries_month_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    _, year, month = query.data.split(":")
-    year, month = int(year), int(month)
     await query.answer()
-
-    async with get_session() as session:
-        db_user = await get_or_create_user(session, telegram_id=query.from_user.id)
-        days = await get_distinct_days(session, db_user.id, year, month)
-        entries = await get_entries(
-            session, db_user.id, year=year, month=month, limit=ENTRIES_PER_PAGE
-        )
-        await session.commit()
-
-    month_names = {
-        1: "January",
-        2: "February",
-        3: "March",
-        4: "April",
-        5: "May",
-        6: "June",
-        7: "July",
-        8: "August",
-        9: "September",
-        10: "October",
-        11: "November",
-        12: "December",
-    }
-
-    if not entries:
-        await query.edit_message_text(f"No entries found for {month_names[month]} {year}.")
-        return
-
-    text = f"📖 {month_names[month]} {year}:\n\n"
-    for e in entries:
-        text += f"• {e.content[:80]}{'...' if len(e.content) > 80 else ''}\n"
-
-    keyboard = [
-        [InlineKeyboardButton("▶️ Next", callback_data=f"ep:{year}:{month}:{ENTRIES_PER_PAGE}")]
-        if len(entries) == ENTRIES_PER_PAGE
-        else [],
-        [InlineKeyboardButton("📅 By Day", callback_data=f"dy:{year}:{month}")] if days else [],
-    ]
-    keyboard = [row for row in keyboard if row]
-    await query.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
-    )
-
-
-async def entries_all_year_callback(update: Update, _context: CallbackContext) -> None:
-    query = update.callback_query
-    year = int(query.data.split(":", 1)[1])
-    await query.answer()
-
-    async with get_session() as session:
-        db_user = await get_or_create_user(session, telegram_id=query.from_user.id)
-        entries = await get_entries(session, db_user.id, year=year, limit=ENTRIES_PER_PAGE)
-        await session.commit()
-
-    if not entries:
-        await query.edit_message_text(f"No entries found for {year}.")
-        return
-
-    text = f"📖 {year}:\n\n"
-    for e in entries:
-        text += f"• {e.content[:80]}{'...' if len(e.content) > 80 else ''}\n"
-
-    keyboard = [
-        [InlineKeyboardButton("▶️ Next", callback_data=f"ayp:{year}:{ENTRIES_PER_PAGE}")]
-        if len(entries) == ENTRIES_PER_PAGE
-        else [],
-    ]
-    keyboard = [row for row in keyboard if row]
-    await query.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
-    )
-
-
-async def entries_page_callback(update: Update, _context: CallbackContext) -> None:
-    query = update.callback_query
     parts = query.data.split(":")
-    action = parts[0]
-    await query.answer()
-
-    if action == "ep":
-        year, month, offset = int(parts[1]), int(parts[2]), int(parts[3])
-    elif action == "ayp":
-        year, month, offset = int(parts[1]), None, int(parts[2])
-    else:
-        return
+    year = int(parts[1])
+    month = int(parts[2])
 
     async with get_session() as session:
-        db_user = await get_or_create_user(session, telegram_id=query.from_user.id)
+        db_user = await _resolve_user(session, update)
+        tz = db_user.timezone or "UTC+8"
+        total = await count_entries_filtered(session, db_user.id, year=year, month=month)
+        entries = await get_entries(session, db_user.id, year=year, month=month, limit=10, offset=0)
+
+    if not entries:
+        await _safe_edit(
+            query, NO_ENTRIES_PERIOD.format(period=f"{_MONTH_FULL[month]} {year}")
+        )
+        return
+
+    page_size = 10
+    pages = max(1, (total + page_size - 1) // page_size)
+    label = f"{_MONTH_FULL[month]} {year}"
+    header = ENTRIES_PAGE_HEADER.format(label=label, count=total, page=1, pages=pages)
+    body = _render_entries(entries[:page_size], tz, show_day_header=True)
+    text = header + body
+
+    keyboard = []
+    if total > page_size:
+        keyboard.append(
+            [InlineKeyboardButton(f"{EMOJI_NEXT} Next", callback_data=f"ep:{year}:{month}:10")]
+        )
+
+    await _safe_edit(
+        query,
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown",
+    )
+
+
+async def entries_page_callback(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    parts = query.data.split(":")
+    year = int(parts[1])
+    month = int(parts[2]) if len(parts) > 2 and parts[2] != "0" else 0
+    offset = int(parts[-1])
+    page_size = 10
+
+    async with get_session() as session:
+        db_user = await _resolve_user(session, update)
+        tz = db_user.timezone or "UTC+8"
+        total = await count_entries_filtered(
+            session, db_user.id, year=year, month=month if month else None
+        )
         entries = await get_entries(
             session,
             db_user.id,
             year=year,
-            month=month,
-            limit=ENTRIES_PER_PAGE,
+            month=month if month else None,
+            limit=page_size + 1,
             offset=offset,
         )
-        await session.commit()
 
     if not entries:
-        await query.edit_message_text("No more entries.")
+        await _safe_edit(query, NO_MORE_ENTRIES)
         return
 
-    month_names = {
-        1: "January",
-        2: "February",
-        3: "March",
-        4: "April",
-        5: "May",
-        6: "June",
-        7: "July",
-        8: "August",
-        9: "September",
-        10: "October",
-        11: "November",
-        12: "December",
-    }
-    label = f"{month_names[month]} {year}" if month else str(year)
-    text = f"📖 {label}:\n\n"
-    for e in entries:
-        text += f"• {e.content[:80]}{'...' if len(e.content) > 80 else ''}\n"
+    has_next = len(entries) > page_size
+    if has_next:
+        entries = entries[:page_size]
+
+    page = offset // page_size + 1
+    pages = max(1, (total + page_size - 1) // page_size)
+
+    label = f"{_MONTH_FULL[month]} {year}" if month else str(year)
+    header = ENTRIES_PAGE_HEADER.format(label=label, count=total, page=page, pages=pages)
+    body = _render_entries(entries, tz, show_day_header=bool(month))
+    text = header + body
 
     keyboard = []
+    nav = []
     if offset > 0:
-        if month:
-            data = f"ep:{year}:{month}:{max(0, offset - ENTRIES_PER_PAGE)}"
-            keyboard.append([InlineKeyboardButton("◀️ Prev", callback_data=data)])
-        else:
-            data = f"ayp:{year}:{max(0, offset - ENTRIES_PER_PAGE)}"
-            keyboard.append([InlineKeyboardButton("◀️ Prev", callback_data=data)])
-    if len(entries) == ENTRIES_PER_PAGE:
-        if month:
-            data = f"ep:{year}:{month}:{offset + ENTRIES_PER_PAGE}"
-            keyboard.append([InlineKeyboardButton("▶️ Next", callback_data=data)])
-        else:
-            data = f"ayp:{year}:{offset + ENTRIES_PER_PAGE}"
-            keyboard.append([InlineKeyboardButton("▶️ Next", callback_data=data)])
+        nav.append(
+            InlineKeyboardButton(
+                f"{EMOJI_PREV} Prev",
+                callback_data=f"ep:{year}:{month or 0}:{offset - page_size}",
+            )
+        )
+    if has_next:
+        nav.append(
+            InlineKeyboardButton(
+                f"{EMOJI_NEXT} Next",
+                callback_data=f"ep:{year}:{month or 0}:{offset + page_size}",
+            )
+        )
+    if nav:
+        keyboard.append(nav)
 
-    await query.edit_message_text(
+    await _safe_edit(
+        query,
         text,
-        reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown",
+    )
+
+
+async def entries_all_year_callback(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    parts = query.data.split(":")
+    year = int(parts[1])
+
+    async with get_session() as session:
+        db_user = await _resolve_user(session, update)
+        tz = db_user.timezone or "UTC+8"
+        total = await count_entries_filtered(session, db_user.id, year=year)
+        entries = await get_entries(session, db_user.id, year=year, limit=10)
+
+    if not entries:
+        await _safe_edit(query, NO_ENTRIES_PERIOD.format(period=str(year)))
+        return
+
+    page_size = 10
+    pages = max(1, (total + page_size - 1) // page_size)
+    label = str(year)
+    header = ENTRIES_PAGE_HEADER.format(label=label, count=total, page=1, pages=pages)
+    body = _render_entries(entries, tz, show_day_header=False)
+    text = header + body
+
+    keyboard = []
+    if total > page_size:
+        keyboard.append(
+            [InlineKeyboardButton(f"{EMOJI_NEXT} Next", callback_data=f"ayp:{year}:0:10")]
+        )
+
+    await _safe_edit(
+        query,
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown",
     )

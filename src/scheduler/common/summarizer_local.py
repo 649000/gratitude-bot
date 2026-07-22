@@ -175,11 +175,13 @@ class LocalSummarizer(DigestSummarizer):
         return found
 
     def _build_entry_list(self, highlights: list[GratitudeEntry]) -> list[dict]:
+        from app.telegram.messages import format_entry_date
+
         return [
             {
                 "id": str(e.id),
                 "content": e.content,
-                "date": e.created_at.strftime("%Y-%m-%d %H:%M"),
+                "date": format_entry_date(e.created_at),
                 "starred": e.starred,
             }
             for e in highlights
@@ -192,16 +194,20 @@ class LocalSummarizer(DigestSummarizer):
         period_end: date,
         highlights: list[GratitudeEntry],
     ) -> str:
+        from app.telegram.messages import format_digest_date, format_entry_date
+
         labels = {
             "weekly": "\U0001f4c5 Your Weekly Digest",
             "monthly": "\U0001f4c5 Your Monthly Digest",
             "yearly": "\U0001f4c5 Your Yearly Digest",
         }
         header = labels.get(digest_type, "\U0001f4c5 Your Digest")
-        lines = [f"{header} ({period_start} \u2014 {period_end})"]
+        lines = [
+            f"{header} ({format_digest_date(period_start)} \u2014 {format_digest_date(period_end)})"
+        ]
         for i, entry in enumerate(highlights, 1):
             lines.append(f"\n{i}\u20e3 {entry.content}")
-            date_str = entry.created_at.strftime("%Y-%m-%d %H:%M")
+            date_str = format_entry_date(entry.created_at)
             if entry.starred:
                 date_str += " \u2b50"
             lines.append(f"   \u2014 {date_str}")

@@ -1,7 +1,8 @@
+import logging
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +13,18 @@ from app.models.preference import UserPreference
 from app.models.prompt import Prompt
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession]:
     async with async_session_factory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def get_or_create_user(
@@ -56,7 +64,11 @@ async def get_or_create_preferences(
 async def get_random_prompt(session: AsyncSession) -> str:
     result = await session.execute(select(Prompt).order_by(func.random()).limit(1))
     prompt = result.scalar_one_or_none()
-    return prompt.text if prompt else "What are you grateful for today?"
+    if prompt:
+        return prompt.text
+    from app.telegram.messages import FALLBACK_PROMPT
+
+    return FALLBACK_PROMPT
 
 
 async def create_entry(
@@ -158,14 +170,31 @@ async def get_distinct_days(
     return [int(row[0]) for row in result.all() if row[0] is not None]
 
 
+async def count_entries_filtered(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    year: int | None = None,
+    month: int | None = None,
+) -> int:
+    query = select(func.count()).where(GratitudeEntry.user_id == user_id)
+    if year:
+        query = query.where(func.extract("year", GratitudeEntry.created_at) == year)
+    if month:
+        query = query.where(func.extract("month", GratitudeEntry.created_at) == month)
+    result = await session.execute(query)
+    return result.scalar() or 0
+
+
 async def delete_entry(
     session: AsyncSession,
     entry_id: uuid.UUID,
 ) -> bool:
     entry = await session.get(GratitudeEntry, entry_id)
+    logger.info("delete_entry entry_id=%s found=%s", entry_id, entry is not None)
     if entry:
-        session.delete(entry)
+        await session.delete(entry)
         await session.flush()
+        logger.info("delete_entry entry_id=%s flushed", entry_id)
         return True
     return False
 
@@ -251,3 +280,121 @@ async def complete_onboarding(
         pref.onboarding_completed = True
         await session.flush()
     return pref
+
+
+async def get_entry_count(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+) -> int:
+    result = await session.execute(select(func.count()).where(GratitudeEntry.user_id == user_id))
+    return result.scalar() or 0
+
+
+async def get_entry_count_range(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    since: datetime,
+    until: datetime | None = None,
+) -> int:
+    stmt = select(func.count()).where(
+        GratitudeEntry.user_id == user_id,
+        GratitudeEntry.created_at >= since,
+    )
+    if until is not None:
+        stmt = stmt.where(GratitudeEntry.created_at < until)
+    result = await session.execute(stmt)
+    return result.scalar() or 0
+
+
+async def get_starred_count(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+) -> int:
+    result = await session.execute(
+        select(func.count()).where(
+            GratitudeEntry.user_id == user_id,
+            GratitudeEntry.starred == True,  # noqa: E712
+        )
+    )
+    return result.scalar() or 0
+
+
+async def get_starred_entries(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    limit: int = 5,
+    offset: int = 0,
+) -> list[GratitudeEntry]:
+    result = await session.execute(
+        select(GratitudeEntry)
+        .where(
+            GratitudeEntry.user_id == user_id,
+            GratitudeEntry.starred == True,  # noqa: E712
+        )
+        .order_by(GratitudeEntry.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(result.scalars().all())
+
+
+async def get_first_entry_date(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+) -> datetime | None:
+    result = await session.execute(
+        select(func.min(GratitudeEntry.created_at)).where(GratitudeEntry.user_id == user_id)
+    )
+    return result.scalar()
+
+
+async def get_streak(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    now: datetime | None = None,
+) -> int:
+    if now is None:
+        now = datetime.now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    streak = 0
+    check_date = today
+    while True:
+        count_result = await session.execute(
+            select(func.count()).where(
+                GratitudeEntry.user_id == user_id,
+                func.date(GratitudeEntry.created_at) == check_date.date(),
+            )
+        )
+        val = count_result.scalar()
+        if val is not None and val > 0:
+            streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+    if streak == 0:
+        # today might not have an entry yet — check yesterday
+        yesterday = today - timedelta(days=1)
+        count_result = await session.execute(
+            select(func.count()).where(
+                GratitudeEntry.user_id == user_id,
+                func.date(GratitudeEntry.created_at) == yesterday.date(),
+            )
+        )
+        val = count_result.scalar()
+        if val is not None and val > 0:
+            streak = 1
+            check_date = yesterday - timedelta(days=1)
+            while True:
+                count_result = await session.execute(
+                    select(func.count()).where(
+                        GratitudeEntry.user_id == user_id,
+                        func.date(GratitudeEntry.created_at) == check_date.date(),
+                    )
+                )
+                val = count_result.scalar()
+                if val is not None and val > 0:
+                    streak += 1
+                    check_date -= timedelta(days=1)
+                else:
+                    break
+    return streak

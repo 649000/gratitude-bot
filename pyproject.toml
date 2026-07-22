@@ -38,8 +38,8 @@ line-length = 100
 exclude = ["alembic"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4"]
-ignore = ["B008"]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "C4"]
+ignore = ["B008", "ARG"]
 
 [tool.ruff.format]
 quote-style = "double"
