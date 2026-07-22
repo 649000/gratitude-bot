@@ -4,6 +4,7 @@ os.environ.setdefault("APP_ENV", "test")
 
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test"
 os.environ.setdefault("DATABASE_URL", TEST_DATABASE_URL)
+os.environ.setdefault("DB_SCHEMA", "public")
 
 from collections.abc import AsyncGenerator  # noqa: E402
 
