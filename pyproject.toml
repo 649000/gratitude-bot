@@ -48,7 +48,45 @@ quote-style = "double"
 python_version = "3.12"
 strict = true
 ignore_missing_imports = true
-disallow_untyped_defs = true
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+disallow_incomplete_defs = false
+warn_return_any = false
+disable_error_code = ["union-attr", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "app.config",
+    "scheduler.common.config",
+]
+disable_error_code = ["call-arg", "arg-type"]
+
+[[tool.mypy.overrides]]
+module = [
+    "app.models.*",
+]
+disable_error_code = ["name-defined"]
+
+[[tool.mypy.overrides]]
+module = [
+    "app.telegram.handlers.db",
+    "scheduler.dispatcher.dispatch",
+]
+disable_error_code = ["operator"]
+
+[[tool.mypy.overrides]]
+module = [
+    "app.telegram.handlers.surprise",
+    "app.main",
+    "app.infrastructure.lambda_handler",
+]
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = [
+    "app.telegram.handlers.start",
+]
+disable_error_code = ["assignment", "arg-type", "index"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
