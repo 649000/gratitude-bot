@@ -2,6 +2,9 @@ import os
 
 os.environ.setdefault("APP_ENV", "test")
 
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test"
+os.environ.setdefault("DATABASE_URL", TEST_DATABASE_URL)
+
 from collections.abc import AsyncGenerator  # noqa: E402
 
 import pytest_asyncio  # noqa: E402
@@ -15,8 +18,6 @@ from sqlalchemy.ext.asyncio import (  # noqa: E402
 from app.database import get_session  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.base import Base  # noqa: E402
-
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test"
 
 
 @pytest_asyncio.fixture(scope="session")
