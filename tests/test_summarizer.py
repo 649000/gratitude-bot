@@ -43,7 +43,7 @@ class TestBuildIntro:
     def test_includes_user_name(self, summarizer):
         user = _user(first_name="Alice")
         highlights = [_entry("Grateful for coffee"), _entry("Sunny day")]
-        entries_data = [{}, {}]
+        entries_data: list[dict[str, object]] = [{}, {}]
 
         intro = summarizer._build_intro(user, "weekly", highlights, entries_data)
 
