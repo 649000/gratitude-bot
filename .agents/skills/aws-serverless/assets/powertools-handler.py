@@ -13,7 +13,8 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 
 logger = Logger()
 tracer = Tracer()
-# Namespace is required (or set POWERTOOLS_METRICS_NAMESPACE); flushing without one raises SchemaValidationError.
+# Namespace is required (or set POWERTOOLS_METRICS_NAMESPACE);
+# flushing without one raises SchemaValidationError.
 metrics = Metrics(namespace="MyApp")
 persistence = DynamoDBPersistenceLayer(table_name="IdempotencyTable")
 
@@ -38,7 +39,8 @@ def handler(event: dict, context: LambdaContext) -> dict:
         "statusCode": 200,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "https://your-domain.example",  # Replace with your domain
+            # Replace with your domain
+            "Access-Control-Allow-Origin": "https://your-domain.example",
         },
         "body": json.dumps(result),
     }
