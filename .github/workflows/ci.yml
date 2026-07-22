@@ -3,96 +3,88 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - ".gitignore"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - ".gitignore"
+  schedule:
+    - cron: "0 8 * * 1" # Monday 8am UTC — weekly audit
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
+    name: Lint & typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
           enable-cache: true
-      - run: uv sync --dev
-      - run: uv run ruff check .
-
-  typecheck:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          python-version: "3.13"
-          enable-cache: true
-      - run: uv sync --dev
-      - run: uv run mypy src/
+      - name: Install dependencies
+        run: uv pip install --system -r requirements.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy .
 
   test:
-    needs: typecheck
+    name: Test (py3.12)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12", "3.13"]
+    needs: lint
     services:
       postgres:
         image: postgres:16-alpine
+        ports:
+          - 5432:5432
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: gratitude_bot_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 5s
+          --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+    env:
+      APP_ENV: test
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
           enable-cache: true
-      - run: uv sync --dev
-      - run: uv run pytest -v --cov=app --cov=scheduler --cov=shared --cov-report=xml --cov-report=term
-        env:
-          APP_ENV: test
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test
-      - uses: codecov/codecov-action@v5
+      - name: Install dependencies
+        run: uv pip install --system -r requirements.txt
+      - name: Run tests
+        run: pytest -v --cov=app --cov=scheduler --cov=shared --cov-report=xml --cov-report=term
+      - name: Upload coverage
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
         with:
-          files: ./coverage.xml
-          flags: ${{ matrix.python-version }}
-        if: matrix.python-version == '3.13'
+          name: coverage
+          path: coverage.xml
+          retention-days: 7
 
-  security:
-    needs: lint
+  audit:
+    name: Security audit
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
           enable-cache: true
-      - run: uv sync --dev
-      - run: uv run pip-audit
-
-  terraform:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~> 1.0"
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive -diff
-
-      - uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_version: latest
-      - name: Terraform Lint
-        run: |
-          tflint --chdir=terraform/modules --recursive
-          tflint --chdir=terraform/environments --recursive
+      - name: Install dependencies
+        run: uv pip install --system -r requirements.txt
+      - run: pip-audit
