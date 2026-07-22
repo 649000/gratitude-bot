@@ -91,6 +91,9 @@ disable_error_code = ["assignment", "arg-type", "index"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: marks tests that require a real database (deselect with '-m \"not integration\"')",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
