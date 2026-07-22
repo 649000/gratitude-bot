@@ -82,9 +82,7 @@ class TestGetOrCreateUser:
         session = AsyncMock()
         session.execute = AsyncMock(return_value=_make_result(scalar_one_or_none=None))
 
-        result = await db.get_or_create_user(
-            session, telegram_id=123, username="u", first_name="F"
-        )
+        result = await db.get_or_create_user(session, telegram_id=123, username="u", first_name="F")
 
         assert result.telegram_id == 123
         assert result.username == "u"
@@ -417,9 +415,7 @@ class TestGetEntryCountRange:
         session = AsyncMock()
         session.execute = AsyncMock(return_value=_make_result(scalar=7))
 
-        result = await db.get_entry_count_range(
-            session, uuid.uuid4(), since=datetime(2025, 7, 1)
-        )
+        result = await db.get_entry_count_range(session, uuid.uuid4(), since=datetime(2025, 7, 1))
 
         assert result == 7
 
@@ -428,9 +424,7 @@ class TestGetEntryCountRange:
         session = AsyncMock()
         session.execute = AsyncMock(return_value=_make_result(scalar=None))
 
-        result = await db.get_entry_count_range(
-            session, uuid.uuid4(), since=datetime(2025, 1, 1)
-        )
+        result = await db.get_entry_count_range(session, uuid.uuid4(), since=datetime(2025, 1, 1))
 
         assert result == 0
 
@@ -520,12 +514,14 @@ class TestGetStreak:
         user_id = uuid.uuid4()
         now = datetime(2025, 7, 22, 10, 0, 0)
         session = AsyncMock()
-        session.execute = AsyncMock(side_effect=[
-            _make_result(scalar=1),
-            _make_result(scalar=1),
-            _make_result(scalar=1),
-            _make_result(scalar=0),
-        ])
+        session.execute = AsyncMock(
+            side_effect=[
+                _make_result(scalar=1),
+                _make_result(scalar=1),
+                _make_result(scalar=1),
+                _make_result(scalar=0),
+            ]
+        )
 
         result = await db.get_streak(session, user_id, now=now)
 
@@ -536,10 +532,12 @@ class TestGetStreak:
         user_id = uuid.uuid4()
         now = datetime(2025, 7, 22, 10, 0, 0)
         session = AsyncMock()
-        session.execute = AsyncMock(side_effect=[
-            _make_result(scalar=0),
-            _make_result(scalar=0),
-        ])
+        session.execute = AsyncMock(
+            side_effect=[
+                _make_result(scalar=0),
+                _make_result(scalar=0),
+            ]
+        )
 
         result = await db.get_streak(session, user_id, now=now)
 
@@ -550,11 +548,13 @@ class TestGetStreak:
         user_id = uuid.uuid4()
         now = datetime(2025, 7, 22, 10, 0, 0)
         session = AsyncMock()
-        session.execute = AsyncMock(side_effect=[
-            _make_result(scalar=0),
-            _make_result(scalar=1),
-            _make_result(scalar=0),
-        ])
+        session.execute = AsyncMock(
+            side_effect=[
+                _make_result(scalar=0),
+                _make_result(scalar=1),
+                _make_result(scalar=0),
+            ]
+        )
 
         result = await db.get_streak(session, user_id, now=now)
 
@@ -565,13 +565,15 @@ class TestGetStreak:
         user_id = uuid.uuid4()
         now = datetime(2025, 7, 22, 10, 0, 0)
         session = AsyncMock()
-        session.execute = AsyncMock(side_effect=[
-            _make_result(scalar=0),
-            _make_result(scalar=1),
-            _make_result(scalar=1),
-            _make_result(scalar=1),
-            _make_result(scalar=0),
-        ])
+        session.execute = AsyncMock(
+            side_effect=[
+                _make_result(scalar=0),
+                _make_result(scalar=1),
+                _make_result(scalar=1),
+                _make_result(scalar=1),
+                _make_result(scalar=0),
+            ]
+        )
 
         result = await db.get_streak(session, user_id, now=now)
 
@@ -582,10 +584,12 @@ class TestGetStreak:
         user_id = uuid.uuid4()
         now = datetime(2025, 7, 22, 10, 0, 0)
         session = AsyncMock()
-        session.execute = AsyncMock(side_effect=[
-            _make_result(scalar=None),
-            _make_result(scalar=0),
-        ])
+        session.execute = AsyncMock(
+            side_effect=[
+                _make_result(scalar=None),
+                _make_result(scalar=0),
+            ]
+        )
 
         result = await db.get_streak(session, user_id, now=now)
 

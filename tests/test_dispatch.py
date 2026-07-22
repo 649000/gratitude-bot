@@ -186,9 +186,7 @@ class TestBuildSqsPayloadFromEntry:
     def test_includes_prefix(self):
         entry = _entry("Test")
 
-        payload = build_sqs_payload_from_entry(
-            entry, chat_id=12345, prefix="Custom prefix:\n\n"
-        )
+        payload = build_sqs_payload_from_entry(entry, chat_id=12345, prefix="Custom prefix:\n\n")
 
         data = json.loads(payload)
         assert data["text"].startswith("Custom prefix:")
