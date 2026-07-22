@@ -128,8 +128,7 @@ YEAR_SELECT = f"{EMOJI_CALENDAR} Select a year:"
 MONTH_SELECT = f"{EMOJI_CALENDAR} Select a month in {{year}}:"
 ENTRIES_HEADER = f"{EMOJI_OPEN_BOOK} {{label}} ({{count}} entries):\n\n"
 ENTRIES_PAGE_HEADER = (
-    f"{EMOJI_OPEN_BOOK} {{label}} ({{count}} entries)"
-    f" \u2014 page {{page}}/{{pages}}:\n\n"
+    f"{EMOJI_OPEN_BOOK} {{label}} ({{count}} entries) \u2014 page {{page}}/{{pages}}:\n\n"
 )
 
 # ── Surprise / Rediscovery ───────────────────────

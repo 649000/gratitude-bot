@@ -36,6 +36,7 @@ async def _safe_edit(query, text, **kwargs):
         if "Message is not modified" not in str(e):
             raise
 
+
 _MONTH_SHORT = {
     1: "Jan",
     2: "Feb",
@@ -149,6 +150,7 @@ async def entries_year_callback(update: Update, context: CallbackContext) -> Non
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
+
 async def entries_month_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
@@ -163,9 +165,7 @@ async def entries_month_callback(update: Update, context: CallbackContext) -> No
         entries = await get_entries(session, db_user.id, year=year, month=month, limit=10, offset=0)
 
     if not entries:
-        await _safe_edit(
-            query, NO_ENTRIES_PERIOD.format(period=f"{_MONTH_FULL[month]} {year}")
-        )
+        await _safe_edit(query, NO_ENTRIES_PERIOD.format(period=f"{_MONTH_FULL[month]} {year}"))
         return
 
     page_size = 10
