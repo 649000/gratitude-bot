@@ -6,8 +6,8 @@ from uuid import UUID
 
 from aws_lambda_powertools import Logger
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.telegram.messages import EMOJI_GIFT, EMOJI_JAR
 from scheduler.common.database import async_session_factory

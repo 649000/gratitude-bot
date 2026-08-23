@@ -10,25 +10,25 @@ import asyncio
 from sqlalchemy import text
 
 from app.config import settings
-from app.database import engine
+from app.database import async_session_factory
 from app.seed_data import prompts
 
 
 async def seed() -> None:
-    async with engine.connect() as conn:
-        result = await conn.execute(text("SELECT COUNT(*) FROM prompts"))
+    async with async_session_factory() as session:
+        result = await session.execute(text("SELECT COUNT(*) FROM prompts"))
         count = result.scalar()
         if count and count > 0:
             print(f"Prompts table already has {count} rows — skipping seed.")
             return
 
         for prompt in prompts:
-            await conn.execute(
+            await session.execute(
                 text("INSERT INTO prompts (text, category) VALUES (:text, :category)"),
                 {"text": prompt["text"], "category": prompt["category"]},
             )
 
-        await conn.commit()
+        await session.commit()
         print(f"Seeded {len(prompts)} prompts into {settings.database_url}")
 
 

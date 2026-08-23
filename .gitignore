@@ -15,6 +15,8 @@ venv/
 env/
 .DS_Store
 .idea/
+.agents/
+skills-lock.json
 .env
 .env.local
 .env.dev
@@ -26,7 +28,6 @@ env/
 *.tfstate
 *.tfstate.*
 .terraform/
-.terraform.lock.hcl
 terraform.tfvars
 *.tfplan
 

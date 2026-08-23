@@ -75,9 +75,7 @@ class BedrockSummarizer(DigestSummarizer):
                 "maxTokens": _MAX_TOKENS,
                 "temperature": 0.0,
             },
-            additionalModelRequestFields={
-                "inferenceConfig": {"topK": 1}
-            },
+            additionalModelRequestFields={"inferenceConfig": {"topK": 1}},
             toolConfig=tool_config,
         )
 
@@ -101,25 +99,27 @@ class BedrockSummarizer(DigestSummarizer):
         prompt = self._build_intro_themes_prompt(user, digest_type, highlights)
 
         tool_config = {
-            "tools": [{
-                "toolSpec": {
-                    "name": "write_intro_themes",
-                    "description": "Write a gratitude journal intro and identify themes",
-                    "inputSchema": {
-                        "json": {
-                            "type": "object",
-                            "properties": {
-                                "intro": {"type": "string"},
-                                "themes": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
+            "tools": [
+                {
+                    "toolSpec": {
+                        "name": "write_intro_themes",
+                        "description": "Write a gratitude journal intro and identify themes",
+                        "inputSchema": {
+                            "json": {
+                                "type": "object",
+                                "properties": {
+                                    "intro": {"type": "string"},
+                                    "themes": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                    },
                                 },
-                            },
-                            "required": ["intro", "themes"],
-                        }
+                                "required": ["intro", "themes"],
+                            }
+                        },
                     }
                 }
-            }],
+            ],
             "toolChoice": {"tool": {"name": "write_intro_themes"}},
         }
 
@@ -134,31 +134,33 @@ class BedrockSummarizer(DigestSummarizer):
         prompt = self._build_annotations_prompt(user, digest_type, highlights)
 
         tool_config = {
-            "tools": [{
-                "toolSpec": {
-                    "name": "write_annotations",
-                    "description": "Annotate each gratitude entry with a short label",
-                    "inputSchema": {
-                        "json": {
-                            "type": "object",
-                            "properties": {
-                                "annotations": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "entry_id": {"type": "string"},
-                                            "label": {"type": "string"},
+            "tools": [
+                {
+                    "toolSpec": {
+                        "name": "write_annotations",
+                        "description": "Annotate each gratitude entry with a short label",
+                        "inputSchema": {
+                            "json": {
+                                "type": "object",
+                                "properties": {
+                                    "annotations": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "entry_id": {"type": "string"},
+                                                "label": {"type": "string"},
+                                            },
+                                            "required": ["entry_id", "label"],
                                         },
-                                        "required": ["entry_id", "label"],
                                     },
                                 },
-                            },
-                            "required": ["annotations"],
-                        }
+                                "required": ["annotations"],
+                            }
+                        },
                     }
                 }
-            }],
+            ],
             "toolChoice": {"tool": {"name": "write_annotations"}},
         }
 

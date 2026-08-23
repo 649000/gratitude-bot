@@ -1,6 +1,4 @@
-import html
 import logging
-import traceback
 
 from telegram import Update
 from telegram.ext import (
@@ -149,47 +147,20 @@ async def error_handler(update: object, context: CallbackContext) -> None:
     if error is None:
         logger.warning("error_handler called with no error")
         return
-    if not hasattr(error, "__traceback__") or error.__traceback__ is None:
-        logger.error("Unhandled exception: %s", error, exc_info=error)
-        return
-
-    tb_text = "".join(traceback.format_exception(None, error, error.__traceback__))
-    tb_short = tb_text[:2500]
-
-    msg = f"<b>⚠️ {html.escape(type(error).__name__)}</b>\n<pre>{html.escape(tb_short)}</pre>"
-    if update and isinstance(update, Update):
-        update_str = html.escape(str(update)[:800])
-        msg += f"\n<b>Update:</b>\n<pre>{update_str}</pre>"
 
     logger.error("Unhandled exception: %s", error, exc_info=error)
 
-    # Try HTML first, fall back to plain text if HTML causes Telegram rejection
-    for parse_mode, text in [("HTML", msg), (None, _strip_html(msg))]:
+    if update and isinstance(update, Update) and update.effective_chat:
         try:
-            if update and isinstance(update, Update) and update.effective_chat:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=_GENERIC_ERROR,
-                )
             await context.bot.send_message(
-                chat_id=settings.telegram_error_chat_id,
-                text=text,
-                parse_mode=parse_mode,
+                chat_id=update.effective_chat.id,
+                text=_GENERIC_ERROR,
             )
-            break
         except Exception:
-            pass
-    else:
-        logger.error("Failed to send error notification via Telegram")
+            logger.exception("Failed to send generic error message to user")
 
 
-_GENERIC_ERROR = "Oops! Something went wrong on my end. The team has been notified \U0001f6e0\ufe0f"
-
-
-def _strip_html(text: str) -> str:
-    import re
-
-    return re.sub(r"<[^>]+>", "", text)
+_GENERIC_ERROR = "Oops! Something went wrong. Please try again \U0001f6e0\ufe0f"
 
 
 async def get_application() -> Application:

@@ -16,8 +16,6 @@ class Settings(SharedSettings):
 
     telegram_bot_token: str = ""
     telegram_webhook_url: str = ""
-    telegram_webhook_secret: str = ""
-    telegram_error_chat_id: int = 123651991
 
     secret_key: str = "change-me-in-production"
     cors_origins: list[str] = ["*"]

@@ -16,9 +16,25 @@ def _resolve_env_file(env: str) -> list[str] | None:
     return None
 
 
+def _validate_prod_secrets(s: "SharedSettings") -> None:
+    if s.env != "prod":
+        return
+
+    missing: list[str] = []
+    if not s.database_url:
+        missing.append("database_url")
+    if hasattr(s, "telegram_bot_token") and not s.telegram_bot_token:
+        missing.append("telegram_bot_token")
+    if missing:
+        raise RuntimeError(
+            f"Refusing to start in prod without required secrets: {', '.join(missing)}"
+        )
+
+
 def _try_ssm_overrides(s: "SharedSettings", ssm_module_name: str) -> None:
     if not s.ssm_enabled:
         logger.info("SSM overrides disabled")
+        _validate_prod_secrets(s)
         return
     try:
         from importlib import import_module
@@ -39,6 +55,8 @@ def _try_ssm_overrides(s: "SharedSettings", ssm_module_name: str) -> None:
                 logger.warning("SSM key %r not found on Settings or value is None", key)
     except Exception as exc:
         logger.warning("SSM override failed: %s: %s", type(exc).__name__, exc)
+
+    _validate_prod_secrets(s)
 
 
 class SharedSettings(BaseSettings):

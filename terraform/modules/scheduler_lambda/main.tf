@@ -68,8 +68,8 @@ module "digest_builder" {
       resources = ["*"]
     }
     bedrock_invoke = {
-      effect    = "Allow"
-      actions   = ["bedrock:InvokeModel"]
+      effect  = "Allow"
+      actions = ["bedrock:InvokeModel"]
       resources = [
         "arn:aws:bedrock:*::foundation-model/*",
         "arn:aws:bedrock:*:*:inference-profile/*",

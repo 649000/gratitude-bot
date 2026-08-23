@@ -72,21 +72,21 @@ module "scheduler_lambda" {
 module "apigw" {
   source = "../../modules/apigw"
 
-  project_name        = local.project_name
-  environment         = var.environment
-  webhook_lambda_arn  = module.webhook_lambda.lambda_function_arn
-  log_retention_days  = 30
-  tags                = local.common_tags
+  project_name       = local.project_name
+  environment        = var.environment
+  webhook_lambda_arn = module.webhook_lambda.lambda_function_arn
+  log_retention_days = 30
+  tags               = local.common_tags
 }
 
 module "eventbridge" {
   source = "../../modules/eventbridge"
 
-  project_name                = local.project_name
-  environment                 = var.environment
-  digest_builder_lambda_arn   = module.scheduler_lambda.digest_builder_arn
-  digest_builder_lambda_name  = module.scheduler_lambda.digest_builder_name
-  dispatcher_lambda_arn       = module.scheduler_lambda.dispatcher_arn
-  dispatcher_lambda_name      = module.scheduler_lambda.dispatcher_name
-  tags                        = local.common_tags
+  project_name               = local.project_name
+  environment                = var.environment
+  digest_builder_lambda_arn  = module.scheduler_lambda.digest_builder_arn
+  digest_builder_lambda_name = module.scheduler_lambda.digest_builder_name
+  dispatcher_lambda_arn      = module.scheduler_lambda.dispatcher_arn
+  dispatcher_lambda_name     = module.scheduler_lambda.dispatcher_name
+  tags                       = local.common_tags
 }

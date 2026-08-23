@@ -18,11 +18,10 @@ async def health_check() -> dict:
     checks: dict[str, str] = {}
 
     try:
-        from app.database import engine
+        from app.database import async_session_factory
 
-        async with engine.connect() as conn:
-            result = await conn.execute(text("SELECT 1"))
-            result.scalar()
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT 1"))
         checks["database"] = "healthy"
     except Exception as exc:
         checks["database"] = f"unhealthy: {exc}"
