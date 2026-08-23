@@ -49,11 +49,11 @@ variable "db_schema" {
 variable "digest_summarizer" {
   description = "Digest summarizer mode (local or bedrock)"
   type        = string
-  default     = "local"
+  default     = "bedrock"
 }
 
 variable "bedrock_model_id" {
   description = "AWS Bedrock model ID for digest summarization"
   type        = string
-  default     = "anthropic.claude-3-haiku-20240307-v1:0"
+  default     = "apac.amazon.nova-micro-v1:0"
 }

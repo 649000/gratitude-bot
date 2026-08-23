@@ -1,8 +1,8 @@
-import logging
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
 import pytz
+from aws_lambda_powertools import Logger
 from sqlalchemy import select
 
 from scheduler.common.database import async_session_factory
@@ -10,7 +10,7 @@ from scheduler.common.models import GratitudeEntry, ScheduledMessage, User
 from scheduler.common.scoring import select_highlights
 from scheduler.common.summarizer import DigestSummarizer, get_summarizer
 
-logger = logging.getLogger(__name__)
+logger = Logger(service="digest-builder")
 
 _summarizer: DigestSummarizer | None = None
 

@@ -212,9 +212,9 @@ class TestBuildBody:
 
         body = summarizer._build_body("weekly", date(2025, 7, 14), date(2025, 7, 20), highlights)
 
-        assert "1\u20e3" in body
-        assert "2\u20e3" in body
-        assert "3\u20e3" in body
+        assert "1." in body
+        assert "2." in body
+        assert "3." in body
 
 
 class TestBuildEntryList:

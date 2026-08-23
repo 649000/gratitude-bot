@@ -1,14 +1,24 @@
+import asyncio
 import json
-import logging
 
+from aws_lambda_powertools.utilities.typing import LambdaContext
 from mangum import Mangum
 
+from app.logging_config import get_logger
 from app.main import app
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 _mangum = Mangum(app, lifespan="auto")
-_initialized = False
+_loop: asyncio.AbstractEventLoop | None = None
+
+
+def _get_or_create_loop() -> asyncio.AbstractEventLoop:
+    global _loop
+    if _loop is None or _loop.is_closed():
+        _loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_loop)
+    return _loop
 
 
 def _is_sqs_event(event: dict) -> bool:
@@ -20,7 +30,8 @@ def _is_sqs_event(event: dict) -> bool:
     return False
 
 
-def handler(event: dict, context: object):
+@logger.inject_lambda_context(log_event=True)
+def handler(event: dict, context: LambdaContext):
     if _is_sqs_event(event):
         return _handle_sqs(event, context)
 
@@ -28,20 +39,12 @@ def handler(event: dict, context: object):
 
 
 def _handle_sqs(event: dict, _context: object) -> dict:
-    from app.logging_config import configure_logging
-
-    global _initialized
-    if not _initialized:
-        configure_logging()
-        _initialized = True
-
-    import asyncio
-
     from app.telegram.sqs_handler import handle_sqs_records
 
     records = event.get("Records", [])
     try:
-        result = asyncio.run(handle_sqs_records(records))
+        loop = _get_or_create_loop()
+        result = loop.run_until_complete(handle_sqs_records(records))
         logger.info("SQS batch processed: %s", json.dumps(result))
         return result
     except Exception:

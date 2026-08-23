@@ -12,6 +12,8 @@ anyio==4.14.2
     #   starlette
 asyncpg==0.31.0
     # via gratitude-bot (pyproject.toml)
+aws-lambda-powertools==3.31.1
+    # via gratitude-bot (pyproject.toml)
 certifi==2026.6.17
     # via
     #   httpcore
@@ -32,6 +34,8 @@ idna==3.18
     # via
     #   anyio
     #   httpx
+jmespath==1.1.0
+    # via aws-lambda-powertools
 mako==1.3.12
     # via alembic
 mangum==0.21.0
@@ -61,6 +65,7 @@ starlette==1.3.1
 typing-extensions==4.16.0
     # via
     #   alembic
+    #   aws-lambda-powertools
     #   fastapi
     #   mangum
     #   pydantic

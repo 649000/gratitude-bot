@@ -206,7 +206,7 @@ class LocalSummarizer(DigestSummarizer):
             f"{header} ({format_digest_date(period_start)} \u2014 {format_digest_date(period_end)})"
         ]
         for i, entry in enumerate(highlights, 1):
-            lines.append(f"\n{i}\u20e3 {entry.content}")
+            lines.append(f"\n{i}. {entry.content}")
             date_str = format_entry_date(entry.created_at)
             if entry.starred:
                 date_str += " \u2b50"

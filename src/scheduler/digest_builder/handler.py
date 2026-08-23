@@ -1,13 +1,12 @@
-import json
-import logging
-
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.utilities.typing import LambdaContext
 from sqlalchemy import select
 
 from scheduler.common.database import async_session_factory
 from scheduler.common.models import User, UserPreference
 from scheduler.digest_builder.builder import build_and_store_digest
 
-logger = logging.getLogger(__name__)
+logger = Logger(service="digest-builder")
 
 DIGEST_TYPE_MAP = {
     "weekly": "digest_weekly_enabled",
@@ -56,15 +55,16 @@ async def handle_digest_generation(digest_type: str) -> dict:
     return {"status": "ok", "generated": generated, "errors": errors, "users": len(users)}
 
 
-def lambda_handler(event: dict, _context: object) -> dict:
-    logger.info("Received event: %s", json.dumps(event))
-
+@logger.inject_lambda_context(log_event=True)
+def lambda_handler(event: dict, context: LambdaContext) -> dict:
     digest_type = event.get("type", "")
-
-    log_level = __import__("os").environ.get("LOG_LEVEL", "INFO")
-    logger.setLevel(logging.DEBUG if log_level == "DEBUG" else logging.INFO)
 
     import asyncio
 
-    result = asyncio.run(handle_digest_generation(digest_type))
-    return result
+    async def main():
+        try:
+            return await handle_digest_generation(digest_type)
+        finally:
+            await async_session_factory.dispose()
+
+    return asyncio.run(main())

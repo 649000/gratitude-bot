@@ -15,7 +15,7 @@ class Settings(SharedSettings):
     sqs_queue_url: str = ""
 
     digest_summarizer: str = "local"
-    bedrock_model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"
+    bedrock_model_id: str = "apac.amazon.nova-micro-v1:0"
 
 
 env_name = resolve_env()

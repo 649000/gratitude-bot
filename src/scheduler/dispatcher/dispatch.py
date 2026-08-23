@@ -1,18 +1,19 @@
 import json
-import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from aws_lambda_powertools import Logger
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.telegram.messages import EMOJI_GIFT, EMOJI_JAR
 from scheduler.common.database import async_session_factory
 from scheduler.common.models import GratitudeEntry, ScheduledMessage, User, UserPreference
 
-logger = logging.getLogger(__name__)
+logger = Logger(service="dispatcher")
 
 _REMINDER_WINDOW_START = 19
 _REMINDER_WINDOW_END = 21
@@ -73,6 +74,7 @@ async def _get_pending_digests() -> list[ScheduledMessage]:
     async with async_session_factory() as session:
         result = await session.execute(
             select(ScheduledMessage)
+            .options(selectinload(ScheduledMessage.user))
             .join(User, User.id == ScheduledMessage.user_id)
             .join(UserPreference, UserPreference.user_id == User.id)
             .where(
@@ -158,10 +160,10 @@ def build_sqs_payload_for_digest(
     from app.telegram.messages import EMOJI_STAR
 
     keyboard = []
-    for entry_id in msg.entry_ids:
+    for i, entry_id in enumerate(msg.entry_ids, 1):
         keyboard.append(
             [
-                {"text": f"{EMOJI_STAR} Star", "callback_data": f"star:{entry_id}"},
+                {"text": f"{EMOJI_STAR} Star {i}", "callback_data": f"star:{entry_id}"},
             ]
         )
 
@@ -183,7 +185,8 @@ def _send_to_sqs(sqs_client, queue_url: str, payload: str, msg_id: str) -> bool:
         )
         return True
     except Exception as e:
-        if "NonExistentQueue" in str(e) or "AWS.SimpleQueueService.NonExistentQueue" in str(e):
+        err = str(e)
+        if "NonExistentQueue" in err or "InvalidParameterValue" in err:
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=payload,
@@ -194,6 +197,7 @@ def _send_to_sqs(sqs_client, queue_url: str, payload: str, msg_id: str) -> bool:
 
 async def dispatch_digests(queue_url: str) -> dict:
     msgs = await _get_pending_digests()
+    logger.info("Pending digests found: %d", len(msgs))
     if not msgs:
         return {"sent": 0}
 
@@ -204,6 +208,7 @@ async def dispatch_digests(queue_url: str) -> dict:
     for msg in msgs:
         user = msg.user
         if not _in_evening_window(user.timezone):
+            logger.debug("Skipping digest %s for user %s: outside evening window", msg.id, user.id)
             continue
 
         try:
@@ -231,6 +236,7 @@ async def dispatch_digests(queue_url: str) -> dict:
 
 async def dispatch_reminders(queue_url: str) -> dict:
     users = await _get_users_for_reminders()
+    logger.info("Users eligible for reminders: %d", len(users))
     if not users:
         return {"sent": 0}
 
@@ -239,10 +245,12 @@ async def dispatch_reminders(queue_url: str) -> dict:
 
     for user in users:
         if not _in_evening_window(user.timezone):
+            logger.debug("Skipping reminder for user %s: outside evening window", user.id)
             continue
 
         async with async_session_factory() as session:
             if await _has_entry_today(session, user.id, user.timezone):
+                logger.debug("Skipping reminder for user %s: already wrote today", user.id)
                 continue
 
             prompt = await _get_random_prompt(session)
@@ -255,10 +263,12 @@ async def dispatch_reminders(queue_url: str) -> dict:
         try:
             msg_id = f"reminder:{user.id}:{datetime.now(UTC).date()}"
             _send_to_sqs(sqs, queue_url, json.dumps(payload), msg_id)
+            logger.info("Sent reminder to user %s (chat_id=%s)", user.id, user.telegram_id)
             sent += 1
         except Exception:
             logger.exception("Failed to dispatch reminder for user %s", user.id)
 
+    logger.info("Reminders dispatched: %d sent, %d total", sent, len(users))
     return {"sent": sent, "total": len(users)}
 
 

@@ -5,6 +5,10 @@ locals {
       prefix_in_zip = "shared"
     },
     {
+      path          = "${var.repo_root}/src/app"
+      prefix_in_zip = "app"
+    },
+    {
       path          = "${var.repo_root}/src/scheduler/common"
       prefix_in_zip = "scheduler/common"
     },
@@ -66,7 +70,10 @@ module "digest_builder" {
     bedrock_invoke = {
       effect    = "Allow"
       actions   = ["bedrock:InvokeModel"]
-      resources = ["arn:aws:bedrock:*::foundation-model/*"]
+      resources = [
+        "arn:aws:bedrock:*::foundation-model/*",
+        "arn:aws:bedrock:*:*:inference-profile/*",
+      ]
     }
   }
 
