@@ -13,8 +13,6 @@ on:
       - "README.md"
       - "LICENSE"
       - ".gitignore"
-  schedule:
-    - cron: "0 8 * * 1" # Monday 8am UTC — weekly audit
   workflow_dispatch:
 
 concurrency:
@@ -75,16 +73,3 @@ jobs:
           path: coverage.xml
           retention-days: 7
 
-  audit:
-    name: Security audit
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.12"
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --extra dev
-      - run: uv run pip-audit
