@@ -172,7 +172,13 @@ make format-check   # ruff format --check
 uv run mypy .       # strict type checking
 ```
 
-CI runs lint, typecheck, tests (against a real Postgres service), and a weekly `pip-audit` security scan. `pre-commit` is configured for Ruff + mypy.
+CI runs lint, typecheck, tests (against a real Postgres service), and dependency security auditing (`pip-audit`). `pre-commit` is configured for Ruff + mypy.
+
+### Security & Compliance in CI/CD
+- **SAST (Static Application Security Testing):** GitHub CodeQL analyzes Python code for security vulnerabilities, taint tracking, and code quality on every push, pull request, and weekly schedule ([codeql.yml](.github/workflows/codeql.yml)).
+- **DAST (Dynamic Application Security Testing):** OWASP ZAP runs automated dynamic API security scans against the running FastAPI application and OpenAPI specification ([dast.yml](.github/workflows/dast.yml)).
+- **SCA & Dependency Management:** Dependabot is configured for security updates only (`open-pull-requests-limit: 0` to silence routine maintenance) across Python (`pip`), GitHub Actions, and Terraform ([dependabot.yml](.github/dependabot.yml)), with `pip-audit` validating dependencies in CI.
+
 
 ## Deployment
 

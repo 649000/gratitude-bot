@@ -1,0 +1,139 @@
+name: DAST
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - ".gitignore"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - ".gitignore"
+  schedule:
+    - cron: "0 6 * * 1" # Weekly Monday 6am UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zap-api-scan:
+    name: OWASP ZAP API Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gratitude_bot_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/gratitude_bot_test
+      DB_SCHEMA: gratitude_bot
+      SECRET_KEY: test-secret-key-for-dast-scans-only
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run database migrations
+        run: uv run alembic upgrade head
+
+      - name: Start FastAPI server
+        run: |
+          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          echo "APP_PID=$!" >> $GITHUB_ENV
+
+      - name: Wait for server readiness
+        run: |
+          echo "Waiting for FastAPI server to become ready..."
+          READY=0
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/api/v1/health | grep -q "status"; then
+              echo "FastAPI server is healthy and responding!"
+              READY=1
+              break
+            fi
+            echo "Waiting ($i/30)..."
+            sleep 1
+          done
+          if [ $READY -ne 1 ]; then
+            echo "Server failed to start in time"
+            exit 1
+          fi
+
+      - name: Run OWASP ZAP API Scan
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
+
+          set +e
+          docker run --rm --network host \
+            -v ${{ github.workspace }}:/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-api-scan.py \
+            -t http://localhost:8000/openapi.json \
+            -f openapi \
+            -c .zap/rules.tsv \
+            -r zap-reports/zap_report.html \
+            -w zap-reports/zap_report.md \
+            -J zap-reports/zap_report.json
+          ZAP_EXIT_CODE=$?
+          set -e
+
+          echo "ZAP returned exit code: $ZAP_EXIT_CODE"
+          # Exit codes: 0 = pass, 1 = warnings, 2 = errors/fails
+          if [ $ZAP_EXIT_CODE -eq 2 ]; then
+            echo "Critical vulnerabilities detected by ZAP"
+            exit 1
+          fi
+
+      - name: Publish ZAP Report to Job Summary
+        if: always()
+        run: |
+          if [ -f zap-reports/zap_report.md ]; then
+            echo "## 🛡️ OWASP ZAP DAST API Scan Summary" >> $GITHUB_STEP_SUMMARY
+            cat zap-reports/zap_report.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload ZAP Scan Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-dast-reports
+          path: zap-reports/
+          retention-days: 14
+
+      - name: Stop FastAPI server
+        if: always()
+        run: |
+          if [ -n "$APP_PID" ]; then
+            kill "$APP_PID" || true
+          fi

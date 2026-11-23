@@ -1,0 +1,19 @@
+# OWASP ZAP Rules Configuration File (Tab-separated: <rule-id>\t<ACTION>\t<description>)
+# Actions: IGNORE | INFO | WARN | FAIL
+#
+# Non-applicable headers for REST APIs
+10020	IGNORE	X-Frame-Options Header Not Set (Not applicable to REST APIs)
+10038	IGNORE	Content Security Policy (CSP) Header Not Set (Not applicable to REST APIs)
+10015	WARN	Re-examine Cache-control Directives
+10021	WARN	X-Content-Type-Options Header Missing
+10096	INFO	Timestamp Disclosure
+#
+# Critical vulnerabilities configured to fail
+40018	FAIL	SQL Injection
+40012	FAIL	Cross Site Scripting (Reflected)
+40014	FAIL	Cross Site Scripting (Persistent)
+40016	FAIL	Cross Site Scripting (DOM Based)
+40026	FAIL	Cross Site Request Forgery
+90019	FAIL	Server Side Code Injection
+90020	FAIL	Remote OS Command Injection
+90022	FAIL	Application Error Disclosure
