@@ -26,6 +26,11 @@ on:
           - dev
           - sit
           - prod
+      force_deploy:
+        description: "Force deploy (bypass placeholder check)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: deploy-${{ github.ref }}-${{ inputs.environment || 'auto' }}
@@ -43,28 +48,49 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.set_env.outputs.environment }}
+      deploy_enabled: ${{ steps.set_env.outputs.deploy_enabled }}
     steps:
       - name: Determine Environment
         id: set_env
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TARGET="${{ inputs.environment }}"
+            FORCE="${{ inputs.force_deploy }}"
           elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
             TARGET="dev"
+            FORCE="false"
           elif [ "${{ github.ref }}" = "refs/heads/sit" ] || [[ "${{ github.ref }}" =~ ^refs/heads/release/ ]]; then
             TARGET="sit"
+            FORCE="false"
           elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
             TARGET="prod"
+            FORCE="false"
           else
             TARGET="dev"
+            FORCE="false"
           fi
+
+          DEPLOY_ENABLED="true"
+          if [ "$FORCE" != "true" ]; then
+            if [ "$TARGET" = "prod" ] && [ "${{ vars.ENABLE_PROD_DEPLOY }}" != "true" ]; then
+              echo "Production ($TARGET) is configured as a placeholder. Automated deployment disabled."
+              DEPLOY_ENABLED="false"
+            elif [ "$TARGET" = "sit" ] && [ "${{ vars.ENABLE_SIT_DEPLOY }}" != "true" ]; then
+              echo "SIT ($TARGET) is configured as a placeholder. Automated deployment disabled."
+              DEPLOY_ENABLED="false"
+            fi
+          fi
+
           echo "Target environment: $TARGET"
+          echo "Deploy enabled: $DEPLOY_ENABLED"
           echo "environment=$TARGET" >> $GITHUB_OUTPUT
+          echo "deploy_enabled=$DEPLOY_ENABLED" >> $GITHUB_OUTPUT
 
   # ── 1. Database Migrations ──
   migrate:
     name: Database Migrations
     needs: resolve_env
+    if: needs.resolve_env.outputs.deploy_enabled == 'true'
     runs-on: ubuntu-latest
     environment: ${{ needs.resolve_env.outputs.environment }}
     steps:
@@ -93,6 +119,7 @@ jobs:
   deploy:
     name: Deploy to AWS
     needs: [resolve_env, migrate]
+    if: needs.resolve_env.outputs.deploy_enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: ${{ needs.resolve_env.outputs.environment }}
@@ -167,3 +194,22 @@ jobs:
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Target Environment:** AWS \`${{ needs.resolve_env.outputs.environment }}\` (\`ap-southeast-1\`)" >> $GITHUB_STEP_SUMMARY
           echo "- **Health Endpoint:** ${{ steps.smoke_test.outputs.health_url }}" >> $GITHUB_STEP_SUMMARY
+
+  # ── 3. Placeholder / Disabled Environment Notice ──
+  placeholder:
+    name: Placeholder Notice
+    needs: resolve_env
+    if: needs.resolve_env.outputs.deploy_enabled != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Environment Disabled Notice
+        run: |
+          TARGET="${{ needs.resolve_env.outputs.environment }}"
+          ENV_UPPER=$(echo "$TARGET" | tr '[:lower:]' '[:upper:]')
+          echo "### ⏸️ Deployment Skipped: $TARGET (Placeholder)" >> $GITHUB_STEP_SUMMARY
+          echo "The **$TARGET** environment is currently configured as a placeholder." >> $GITHUB_STEP_SUMMARY
+          echo "Automated deployments to this environment are disabled so pipeline runs do not fail." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### How to Enable Deployments for $TARGET:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Configure the required secrets (\`AWS_ROLE_ARN\`, \`DATABASE_URL\`, \`TELEGRAM_BOT_TOKEN\`, \`TF_API_TOKEN\`) in GitHub **Settings > Environments > $TARGET**." >> $GITHUB_STEP_SUMMARY
+          echo "2. Set the repository variable \`ENABLE_${ENV_UPPER}_DEPLOY=true\` in **Settings > Secrets and variables > Actions > Variables** (or trigger manually via **Run workflow** with **Force deploy** checked)." >> $GITHUB_STEP_SUMMARY

@@ -183,13 +183,16 @@ CI runs lint, typecheck, tests (against a real Postgres service), and dependency
 ## Deployment
 
 Automated deployment across environments is handled via GitHub Actions ([cd.yml](.github/workflows/cd.yml)) following GitFlow:
-- **`develop` branch:** Auto-deploys to AWS **`dev`** (`terraform/environments/dev`)
-- **`sit` / `release/**` branches:** Auto-deploys to AWS **`sit`** (`terraform/environments/sit`)
-- **`main` branch:** Deploys to AWS **`prod`** (`terraform/environments/prod`)
+- **`develop` branch:** Auto-deploys to AWS **`dev`** (`terraform/environments/dev`).
+- **`sit` / `release/**` branches:** Targets AWS **`sit`** (`terraform/environments/sit`).
+- **`main` branch:** Targets AWS **`prod`** (`terraform/environments/prod`).
 - **`workflow_dispatch`:** Manually trigger deployment to any environment (`dev`, `sit`, `prod`) on demand.
 
-For every deployment, the pipeline:
-1. Resolves the target environment dynamically.
+> [!NOTE]
+> `sit` and `prod` are currently configured as **placeholder environments**. When targeted, the CD pipeline verifies the target, logs a placeholder notice, and exits successfully without attempting migration or deployment. To activate automated deployment to production, set the repository variable `ENABLE_PROD_DEPLOY=true` (and configure the corresponding GitHub Environment secrets). For manual runs, use the "Force deploy" checkbox in `workflow_dispatch`.
+
+When an active environment is deployed, the pipeline:
+1. Resolves the target environment and confirms deployment is enabled.
 2. Runs Alembic database migrations against the target Supabase database (`uv run alembic upgrade head`).
 3. Authenticates to AWS via OIDC.
 4. Deploys infrastructure and Lambda code with Terraform (using HCP Terraform for remote state locking).
