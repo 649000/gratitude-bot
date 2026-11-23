@@ -29,7 +29,7 @@ module "webhook_lambda" {
   project_name       = local.project_name
   environment        = var.environment
   repo_root          = "${local.repo_root}/../../.."
-  architectures      = ["arm64"]
+  architectures      = ["x86_64"]
   memory_size        = var.lambda_memory_size
   timeout            = var.lambda_timeout
   log_retention_days = 30
@@ -55,7 +55,7 @@ module "scheduler_lambda" {
   project_name       = local.project_name
   environment        = var.environment
   repo_root          = "${local.repo_root}/../../.."
-  architectures      = ["arm64"]
+  architectures      = ["x86_64"]
   memory_size        = var.lambda_memory_size
   log_retention_days = 30
   log_level          = var.log_level

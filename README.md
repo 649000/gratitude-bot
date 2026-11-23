@@ -91,7 +91,7 @@ Secrets (`TELEGRAM_BOT_TOKEN`, `DATABASE_URL`) live in AWS SSM Parameter Store a
 | Bot framework    | [python-telegram-bot](https://python-telegram-bot.org/)       |
 | Database         | PostgreSQL (Supabase) via SQLAlchemy 2 async + asyncpg        |
 | Migrations       | Alembic                                                       |
-| Compute          | AWS Lambda (arm64)                                            |
+| Compute          | AWS Lambda (x86_64)                                           |
 | Scheduling       | Amazon EventBridge cron rules                                 |
 | Queueing         | Amazon SQS                                                    |
 | Secrets          | AWS SSM Parameter Store                                       |
