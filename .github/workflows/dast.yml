@@ -63,6 +63,17 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
+      - name: Initialize database schema
+        run: |
+          uv run python -c "
+          import asyncio, asyncpg
+          async def init():
+              conn = await asyncpg.connect('postgresql://postgres:postgres@localhost:5432/gratitude_bot_test')
+              await conn.execute('CREATE SCHEMA IF NOT EXISTS gratitude_bot;')
+              await conn.close()
+          asyncio.run(init())
+          "
+
       - name: Run database migrations
         run: uv run alembic upgrade head
 
@@ -91,9 +102,6 @@ jobs:
 
       - name: Run OWASP ZAP API Scan
         run: |
-          mkdir -p zap-reports
-          chmod 777 zap-reports
-
           set +e
           docker run --rm --network host \
             -v ${{ github.workspace }}:/zap/wrk/:rw \
@@ -102,9 +110,9 @@ jobs:
             -t http://localhost:8000/openapi.json \
             -f openapi \
             -c .zap/rules.tsv \
-            -r zap-reports/zap_report.html \
-            -w zap-reports/zap_report.md \
-            -J zap-reports/zap_report.json
+            -r zap_report.html \
+            -w zap_report.md \
+            -J zap_report.json
           ZAP_EXIT_CODE=$?
           set -e
 
@@ -118,9 +126,9 @@ jobs:
       - name: Publish ZAP Report to Job Summary
         if: always()
         run: |
-          if [ -f zap-reports/zap_report.md ]; then
+          if [ -f zap_report.md ]; then
             echo "## 🛡️ OWASP ZAP DAST API Scan Summary" >> $GITHUB_STEP_SUMMARY
-            cat zap-reports/zap_report.md >> $GITHUB_STEP_SUMMARY
+            cat zap_report.md >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload ZAP Scan Reports
@@ -128,7 +136,7 @@ jobs:
         if: always()
         with:
           name: zap-dast-reports
-          path: zap-reports/
+          path: zap_report.*
           retention-days: 14
 
       - name: Stop FastAPI server

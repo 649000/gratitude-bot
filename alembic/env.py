@@ -23,7 +23,7 @@ TIMEZONE = "Asia/Singapore"
 _CONNECT_ARGS = {
     "server_settings": {
         "timezone": TIMEZONE,
-        "search_path": settings.db_schema,
+        "search_path": f"{settings.db_schema},public",
     },
     "statement_cache_size": 0,
 }
