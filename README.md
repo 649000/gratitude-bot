@@ -182,7 +182,15 @@ CI runs lint, typecheck, tests (against a real Postgres service), and dependency
 
 ## Deployment
 
-Infrastructure is managed with Terraform across three environments (`dev`, `sit`, `prod`) under `terraform/environments/`.
+Automated deployment to AWS `dev` is handled via GitHub Actions ([cd.yml](.github/workflows/cd.yml)). On push to `main` (or manual dispatch), the pipeline:
+1. Runs Alembic database migrations against Supabase (`uv run alembic upgrade head`).
+2. Authenticates to AWS via OIDC.
+3. Deploys infrastructure and Lambda code with Terraform (using HCP Terraform for remote state locking).
+4. Runs a post-deployment smoke test verifying `GET /api/v1/health`.
+
+### Manual Deployment
+
+Infrastructure can also be applied manually from the CLI:
 
 ```bash
 cd terraform/environments/dev
