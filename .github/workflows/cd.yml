@@ -78,33 +78,20 @@ jobs:
       - name: Debug OIDC Token Claims
         env:
           ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TF_TOKEN: ${{ secrets.TF_TOKEN }}
+          TERRAFORM_API_TOKEN: ${{ secrets.TERRAFORM_API_TOKEN }}
         run: |
-          echo "=== Debugging OIDC & Secret Configuration ==="
+          echo "=== Debugging Secrets Configuration ==="
           if [ -z "$ROLE_ARN" ]; then
             echo "ERROR: AWS_ROLE_ARN secret is empty!"
           else
             echo "AWS_ROLE_ARN is populated (starts with: ${ROLE_ARN:0:20}...)"
           fi
 
-          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
-          python3 -c "
-          import sys, json, base64
-          token = sys.argv[1]
-          if not token or token == 'null':
-              print('ERROR: Failed to retrieve OIDC token from GitHub Actions runtime')
-              sys.exit(0)
-          parts = token.split('.')
-          payload = parts[1] + '=' * (-len(parts[1]) % 4)
-          data = json.loads(base64.urlsafe_b64decode(payload))
-          print('--- GitHub Actions OIDC Token Claims ---')
-          print('iss (issuer):', data.get('iss'))
-          print('aud (audience):', data.get('aud'))
-          print('sub (subject):', data.get('sub'))
-          print('repository:', data.get('repository'))
-          print('environment:', data.get('environment'))
-          print('ref:', data.get('ref'))
-          print('-----------------------------------------')
-          " "$TOKEN"
+          echo "TF_API_TOKEN length: ${#TF_API_TOKEN}"
+          echo "TF_TOKEN length: ${#TF_TOKEN}"
+          echo "TERRAFORM_API_TOKEN length: ${#TERRAFORM_API_TOKEN}"
 
       - name: Authenticate to AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -115,11 +102,12 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN || secrets.TF_TOKEN || secrets.TERRAFORM_API_TOKEN }}
 
       - name: Terraform Init & Apply
         working-directory: terraform/environments/dev
         env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN || secrets.TF_TOKEN || secrets.TERRAFORM_API_TOKEN }}
           TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
           TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
