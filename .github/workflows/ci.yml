@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
     paths-ignore:
       - "README.md"
       - "LICENSE"
       - ".gitignore"
   pull_request:
-    branches: [main]
+    branches: [develop, main]
     paths-ignore:
       - "README.md"
       - "LICENSE"
@@ -66,7 +66,7 @@ jobs:
       - name: Run tests
         run: uv run pytest -v --cov=app --cov=scheduler --cov=shared --cov-report=xml --cov-report=term
       - name: Upload coverage
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         uses: actions/upload-artifact@v4
         with:
           name: coverage

@@ -2,18 +2,33 @@ name: CD
 
 on:
   push:
-    branches: [main]
+    branches:
+      - develop
+      - sit
+      - "release/**"
+      - main
     paths-ignore:
       - "README.md"
       - "LICENSE"
       - ".gitignore"
       - "docs/**"
+      - ".github/workflows/ci.yml"
       - ".github/workflows/codeql.yml"
       - ".github/workflows/dast.yml"
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment to deploy"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - sit
+          - prod
 
 concurrency:
-  group: deploy-dev
+  group: deploy-${{ github.ref }}-${{ inputs.environment || 'auto' }}
   cancel-in-progress: false
 
 permissions:
@@ -22,11 +37,36 @@ permissions:
   deployments: write # Allows GitHub to log deployment events in Environments tab
 
 jobs:
+  # ── 0. Resolve Target Environment ──
+  resolve_env:
+    name: Resolve Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set_env.outputs.environment }}
+    steps:
+      - name: Determine Environment
+        id: set_env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET="${{ inputs.environment }}"
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            TARGET="dev"
+          elif [ "${{ github.ref }}" = "refs/heads/sit" ] || [[ "${{ github.ref }}" =~ ^refs/heads/release/ ]]; then
+            TARGET="sit"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TARGET="prod"
+          else
+            TARGET="dev"
+          fi
+          echo "Target environment: $TARGET"
+          echo "environment=$TARGET" >> $GITHUB_OUTPUT
+
   # ── 1. Database Migrations ──
   migrate:
     name: Database Migrations
+    needs: resolve_env
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ needs.resolve_env.outputs.environment }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,7 +82,7 @@ jobs:
 
       - name: Run Alembic migrations
         env:
-          APP_ENV: dev
+          APP_ENV: ${{ needs.resolve_env.outputs.environment }}
           SSM_ENABLED: "false"
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DB_SCHEMA: gratitude_bot
@@ -51,11 +91,11 @@ jobs:
 
   # ── 2. Infrastructure & Lambda Deployment ──
   deploy:
-    name: Deploy to AWS Dev
-    needs: migrate
+    name: Deploy to AWS
+    needs: [resolve_env, migrate]
     runs-on: ubuntu-latest
     environment:
-      name: dev
+      name: ${{ needs.resolve_env.outputs.environment }}
       url: ${{ steps.smoke_test.outputs.health_url }}
     steps:
       - name: Checkout repository
@@ -82,7 +122,7 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN || secrets.TP_API_TOKEN || secrets.TF_TOKEN }}
 
       - name: Terraform Init & Apply
-        working-directory: terraform/environments/dev
+        working-directory: terraform/environments/${{ needs.resolve_env.outputs.environment }}
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
           TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN || secrets.TP_API_TOKEN || secrets.TF_TOKEN }}
@@ -95,7 +135,7 @@ jobs:
       # ── 3. Post-Deployment Verification ──
       - name: Smoke Test Health Endpoint
         id: smoke_test
-        working-directory: terraform/environments/dev
+        working-directory: terraform/environments/${{ needs.resolve_env.outputs.environment }}
         run: |
           WEBHOOK_URL=$(terraform output -raw webhook_url)
           HEALTH_URL="${WEBHOOK_URL%/telegram/webhook}/health"
@@ -122,8 +162,8 @@ jobs:
       - name: Deployment Summary
         if: always()
         run: |
-          echo "### 🚀 Deployment to Dev Summary" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Deployment Summary (${{ needs.resolve_env.outputs.environment }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target Environment:** AWS \`dev\` (\`ap-southeast-1\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Environment:** AWS \`${{ needs.resolve_env.outputs.environment }}\` (\`ap-southeast-1\`)" >> $GITHUB_STEP_SUMMARY
           echo "- **Health Endpoint:** ${{ steps.smoke_test.outputs.health_url }}" >> $GITHUB_STEP_SUMMARY

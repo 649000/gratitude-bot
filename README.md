@@ -182,18 +182,25 @@ CI runs lint, typecheck, tests (against a real Postgres service), and dependency
 
 ## Deployment
 
-Automated deployment to AWS `dev` is handled via GitHub Actions ([cd.yml](.github/workflows/cd.yml)). On push to `main` (or manual dispatch), the pipeline:
-1. Runs Alembic database migrations against Supabase (`uv run alembic upgrade head`).
-2. Authenticates to AWS via OIDC.
-3. Deploys infrastructure and Lambda code with Terraform (using HCP Terraform for remote state locking).
-4. Runs a post-deployment smoke test verifying `GET /api/v1/health`.
+Automated deployment across environments is handled via GitHub Actions ([cd.yml](.github/workflows/cd.yml)) following GitFlow:
+- **`develop` branch:** Auto-deploys to AWS **`dev`** (`terraform/environments/dev`)
+- **`sit` / `release/**` branches:** Auto-deploys to AWS **`sit`** (`terraform/environments/sit`)
+- **`main` branch:** Deploys to AWS **`prod`** (`terraform/environments/prod`)
+- **`workflow_dispatch`:** Manually trigger deployment to any environment (`dev`, `sit`, `prod`) on demand.
+
+For every deployment, the pipeline:
+1. Resolves the target environment dynamically.
+2. Runs Alembic database migrations against the target Supabase database (`uv run alembic upgrade head`).
+3. Authenticates to AWS via OIDC.
+4. Deploys infrastructure and Lambda code with Terraform (using HCP Terraform for remote state locking).
+5. Runs a post-deployment smoke test verifying `GET /api/v1/health`.
 
 ### Manual Deployment
 
 Infrastructure can also be applied manually from the CLI:
 
 ```bash
-cd terraform/environments/dev
+cd terraform/environments/dev  # or sit / prod
 terraform init
 terraform plan
 terraform apply
