@@ -75,24 +75,6 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --no-dev
 
-      - name: Debug OIDC Token Claims
-        env:
-          ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
-          TF_TOKEN: ${{ secrets.TF_TOKEN }}
-          TERRAFORM_API_TOKEN: ${{ secrets.TERRAFORM_API_TOKEN }}
-        run: |
-          echo "=== Debugging Secrets Configuration ==="
-          if [ -z "$ROLE_ARN" ]; then
-            echo "ERROR: AWS_ROLE_ARN secret is empty!"
-          else
-            echo "AWS_ROLE_ARN is populated (starts with: ${ROLE_ARN:0:20}...)"
-          fi
-
-          echo "TF_API_TOKEN length: ${#TF_API_TOKEN}"
-          echo "TF_TOKEN length: ${#TF_TOKEN}"
-          echo "TERRAFORM_API_TOKEN length: ${#TERRAFORM_API_TOKEN}"
-
       - name: Authenticate to AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -102,12 +84,12 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN || secrets.TF_TOKEN || secrets.TERRAFORM_API_TOKEN }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN || secrets.TP_API_TOKEN || secrets.TF_TOKEN }}
 
       - name: Terraform Init & Apply
         working-directory: terraform/environments/dev
         env:
-          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN || secrets.TF_TOKEN || secrets.TERRAFORM_API_TOKEN }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN || secrets.TP_API_TOKEN || secrets.TF_TOKEN }}
           TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
           TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
