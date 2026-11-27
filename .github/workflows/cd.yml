@@ -121,9 +121,7 @@ jobs:
     needs: [resolve_env, migrate]
     if: needs.resolve_env.outputs.deploy_enabled == 'true'
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ needs.resolve_env.outputs.environment }}
-      url: ${{ steps.smoke_test.outputs.health_url }}
+    environment: ${{ needs.resolve_env.outputs.environment }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -161,13 +159,15 @@ jobs:
 
       # ── 3. Post-Deployment Verification ──
       - name: Smoke Test Health Endpoint
-        id: smoke_test
         working-directory: terraform/environments/${{ needs.resolve_env.outputs.environment }}
         run: |
           WEBHOOK_URL=$(terraform output -raw webhook_url)
           HEALTH_URL="${WEBHOOK_URL%/telegram/webhook}/health"
-          echo "health_url=$HEALTH_URL" >> $GITHUB_OUTPUT
-          echo "Verifying health at $HEALTH_URL..."
+          BASE_URL="${WEBHOOK_URL%/api/v1/telegram/webhook}"
+          echo "::add-mask::$BASE_URL"
+          echo "::add-mask::$WEBHOOK_URL"
+          echo "::add-mask::$HEALTH_URL"
+          echo "Verifying health endpoint..."
 
           READY=0
           for i in {1..12}; do
@@ -193,7 +193,6 @@ jobs:
           echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Target Environment:** AWS \`${{ needs.resolve_env.outputs.environment }}\` (\`ap-southeast-1\`)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Health Endpoint:** ${{ steps.smoke_test.outputs.health_url }}" >> $GITHUB_STEP_SUMMARY
 
   # ── 3. Placeholder / Disabled Environment Notice ──
   placeholder:
